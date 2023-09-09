@@ -1,0 +1,10 @@
+ser:
+  hosts:
+    ser5-1:
+      ansible_host: 192.168.0.172
+    ser5-2:
+      ansible_host: 192.168.0.138
+    ser5-3:
+      ansible_host: 192.168.0.152
+  vars:
+    ansible_user: josh
