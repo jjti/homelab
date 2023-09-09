@@ -22,27 +22,16 @@
         state: latest
         update_cache: true
 
-    - name: Create group
-      ansible.builtin.group:
-        name: nomad
-        state: present
-    - name: Create user
-      ansible.builtin.user:
-        name: nomad
-        group: nomad
-
     - name: Create data dir
       ansible.builtin.file:
         path: /opt/nomad
         state: directory
         mode: "700"
-        owner: nomad
     - name: Create config dir
       ansible.builtin.file:
         path: /etc/nomad.d
         state: directory
         mode: "700"
-        owner: nomad
 
     - name: Create unit file
       copy:
@@ -55,9 +44,6 @@
           After=network-online.target
 
           [Service]
-          User=nomad
-          Group=nomad
-
           ExecReload=/bin/kill -HUP $MAINPID
           ExecStart=/usr/bin/nomad agent -config /etc/nomad.d
           KillMode=process
@@ -103,8 +89,12 @@
             prometheus_metrics = true
           }
 
+          limits {
+            http_max_conns_per_client = 400
+          }
     - name: Start nomad
       ansible.builtin.systemd:
         state: restarted
+        enabled: true
         daemon_reload: true
         name: nomad

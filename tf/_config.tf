@@ -6,8 +6,13 @@ terraform {
     }
 
     nomad = {
-      source = "hashicorp/nomad"
+      source  = "hashicorp/nomad"
       version = "2.0.0"
+    }
+
+    random = {
+      source = "hashicorp/random"
+      version = "3.5.1"
     }
   }
 
@@ -29,5 +34,5 @@ provider "aws" {
 }
 
 provider "nomad" {
-    address = "http://192.168.0.172:4646"
+  address = "http://192.168.0.172:4646"
 }
