@@ -1,0 +1,110 @@
+- name: Install Nomad
+  hosts: ser
+  become: yes
+
+  # https://developer.hashicorp.com/nomad/tutorials/enterprise/production-deployment-guide-vm-with-consul
+  tasks:
+    - name: Add GPG key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+    - name: Add repository
+      apt_repository:
+        repo: deb https://apt.releases.hashicorp.com jammy main
+        state: present
+    - name: Install dependencies
+      apt:
+        name:
+          - wget
+          - gpg
+          - coreutils
+          - nomad
+        state: latest
+        update_cache: true
+
+    - name: Create group
+      ansible.builtin.group:
+        name: nomad
+        state: present
+    - name: Create user
+      ansible.builtin.user:
+        name: nomad
+        group: nomad
+
+    - name: Create data dir
+      ansible.builtin.file:
+        path: /opt/nomad
+        state: directory
+        mode: "700"
+        owner: nomad
+    - name: Create config dir
+      ansible.builtin.file:
+        path: /etc/nomad.d
+        state: directory
+        mode: "700"
+        owner: nomad
+
+    - name: Create unit file
+      copy:
+        dest: /etc/systemd/system/nomad.service
+        content: |
+          [Unit]
+          Description=Nomad
+          Documentation=https://www.nomadproject.io/docs/
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=nomad
+          Group=nomad
+
+          ExecReload=/bin/kill -HUP $MAINPID
+          ExecStart=/usr/bin/nomad agent -config /etc/nomad.d
+          KillMode=process
+          KillSignal=SIGINT
+          LimitNOFILE=65536
+          LimitNPROC=infinity
+          Restart=on-failure
+          RestartSec=2
+
+          TasksMax=infinity
+          OOMScoreAdjust=-1000
+
+          [Install]
+          WantedBy=multi-user.target
+    - name: Create nomad config file
+      copy:
+        dest: /etc/nomad.d/nomad.hcl
+        content: |
+          datacenter = "dc1"
+          data_dir = "/opt/nomad"
+
+          server {
+            enabled = true
+            bootstrap_expect = 3
+            data_dir = "/opt/nomad/server"
+
+            server_join {
+              retry_join = [ "{{ groups['ser'] | map('extract', hostvars, ['ansible_host']) | join('", "') }}" ]
+              retry_max = 3
+              retry_interval = "15s"
+            }
+          }
+
+          client {
+            enabled = true
+          }
+
+          acl {
+            enabled = true
+          }
+
+          telemetry {
+            prometheus_metrics = true
+          }
+
+    - name: Start nomad
+      ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: true
+        name: nomad

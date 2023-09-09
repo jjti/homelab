@@ -1,5 +1,12 @@
-
 # ansible
-ansible/setup:
-	ansible-playbook -K -i ./ansible/inventory.yaml ./ansible/setup.yaml
+.PHONY: ansible
+ansible:
+	ansible-playbook -i ./ansible/inventory.yaml ./ansible/setup.yaml
 
+# tf
+.PHONY: tf
+tf:
+	cd tf && terraform init && terraform apply
+
+tf/fix:
+	@terraform fmt -recursive .

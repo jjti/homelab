@@ -2,6 +2,7 @@
   hosts: ser
   become: true
   tasks:
+    # Set up auth
     # https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-automate-initial-server-setup-on-ubuntu-20-04
     - name: Set up passwordless sudo
       lineinfile:
@@ -10,6 +11,8 @@
         regexp: "^%sudo"
         line: "%sudo ALL=(ALL) NOPASSWD: ALL"
         validate: "/usr/sbin/visudo -cf %s"
+
+    # Set up Docker
     # https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-20-04
     - name: Add Docker GPG apt Key
       apt_key:
