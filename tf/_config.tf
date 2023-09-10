@@ -5,21 +5,27 @@ terraform {
       version = "5.4.0"
     }
 
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "4.14.0"
+    }
+
     nomad = {
       source  = "hashicorp/nomad"
       version = "2.0.0"
     }
 
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
       version = "3.5.1"
     }
   }
 
   backend "s3" {
-    bucket = "jjti-homelab-state"
-    key    = "state.tfstate"
-    region = "us-east-1"
+    bucket  = "jjti-homelab-state"
+    key     = "state.tfstate"
+    region  = "us-east-1"
+    encrypt = true
   }
 }
 
@@ -36,3 +42,5 @@ provider "aws" {
 provider "nomad" {
   address = "http://192.168.0.172:4646"
 }
+
+provider "cloudflare" {}

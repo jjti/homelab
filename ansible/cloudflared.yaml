@@ -7,9 +7,10 @@
     - name: Add cloudflared
       ansible.builtin.apt:
         deb: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-    - name: Check if cloudflared service already exists
-      shell: service cloudflared status
-      register: cloudflared_status
+    # This skips the initial "cloudflared service install" command
     - name: Start cloudflared
-      when: cloudflared_status.rc != 0
-      ansible.builtin.command: cloudflared service install {{ lookup('ansible.builtin.env', 'CLOUDFLARE_TUNNEL_SECRET') }}
+      ansible.builtin.systemd:
+        state: restarted
+        enabled: true
+        daemon_reload: true
+        name: cloudflared
