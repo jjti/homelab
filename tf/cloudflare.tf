@@ -1,7 +1,8 @@
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/terraform/
 
 locals {
-  nomad_hostname = "nomad.${var.cloudflare_domain}"
+  nomad_hostname   = "nomad.${var.cloudflare_domain}"
+  traefik_hostname = "traefik.${var.cloudflare_domain}"
 }
 
 resource "cloudflare_record" "record" {
@@ -28,6 +29,14 @@ resource "cloudflare_record" "record_nomad" {
   proxied = true
 }
 
+resource "cloudflare_record" "record_traefik" {
+  name    = "traefik"
+  zone_id = var.cloudflare_zone_id
+  value   = cloudflare_tunnel.auto_tunnel.cname
+  type    = "CNAME"
+  proxied = true
+}
+
 resource "random_id" "tunnel_secret" {
   byte_length = 35
 }
@@ -45,6 +54,11 @@ resource "cloudflare_tunnel_config" "auto_tunnel" {
   config {
     origin_request {
       no_tls_verify = true
+    }
+
+    ingress_rule {
+      hostname = local.traefik_hostname
+      service  = "http://localhost:8080"
     }
 
     ingress_rule {
@@ -109,6 +123,37 @@ resource "cloudflare_access_policy" "nomad_token" {
 
   include {
     service_token = [cloudflare_access_service_token.token.id]
+  }
+}
+
+###
+# Traefik
+###
+
+resource "cloudflare_access_application" "traefik" {
+  zone_id                   = var.cloudflare_zone_id
+  name                      = "homelab traefik access"
+  domain                    = local.traefik_hostname
+  type                      = "self_hosted"
+  session_duration          = "1h"
+  auto_redirect_to_identity = true
+  allowed_idps              = [cloudflare_access_identity_provider.github.id]
+}
+
+resource "cloudflare_access_policy" "traefik_github" {
+  application_id = cloudflare_access_application.traefik.id
+  zone_id        = var.cloudflare_zone_id
+  name           = "homelab github access policy"
+  precedence     = "1"
+  decision       = "allow"
+
+  include {
+    github {
+      identity_provider_id = cloudflare_access_identity_provider.github.id
+      name                 = "github"
+    }
+
+    email = ["joshua.timmons1@gmail.com"]
   }
 }
 

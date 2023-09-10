@@ -2,8 +2,8 @@
 
 ## Links
 
-Nomad: http://192.168.0.172/admin/nomad
-Traefik: http://192.168.0.172:8080
+- Nomad: https://nomad.joshuatimmons.com
+- Traefik: https://traefik.joshuatimmons.com
 
 ## Tools
 

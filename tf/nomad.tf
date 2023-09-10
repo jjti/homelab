@@ -33,7 +33,7 @@ resource "nomad_acl_token" "read" {
 resource "nomad_job" "traefik" {
   hcl2 {
     vars = {
-      "nomad_token"      = nomad_acl_token.read.secret_id,
+      "nomad_token" = nomad_acl_token.read.secret_id,
     }
   }
 
