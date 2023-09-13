@@ -37,6 +37,13 @@ resource "nomad_variable" "traefik" {
   }
 }
 
+resource "nomad_variable" "pihole" {
+  path = "nomad/jobs/pihole"
+  items = {
+    password = random_id.pihole_password.b64_std
+  }
+}
+
 resource "nomad_job" "jobs" {
   for_each = fileset(path.module, "jobs/*")
 

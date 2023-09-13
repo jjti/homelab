@@ -24,7 +24,6 @@ Consul gets deployed using the [`ansible-consul` role](https://github.com/ansibl
 ```bash
 cd ./ansible/roles/ansible-consul
 ansible-galaxy install -r ./requirements.yml
-python3 -m pip install -r ./requirements.txt
 
 cd ./files
 consul tls ca create
@@ -127,40 +126,30 @@ And configure Traefik to get service instances from Nomad with a read-only token
 
 ```hcl
 // tf/nomad.tf
-resource "nomad_job" "traefik" {
-  jobspec = file("${path.module}/jobs/traefik.hcl")
-
-    hcl2 {
-        vars = {
-            nomad_token = nomad_acl_token.read.secret_id
-        }
-    }
-}
+resource "nomad_variable" "traefik" {
+  path = "nomad/jobs/traefik"
+  items = {
+    read_token = data.consul_acl_token_secret_id.traefik.secret_id
+  }
 
 // jobs/traefik.hcl
-job "traefik" {
-    group "traefik" {
-        task "server" {
-            driver = "docker"
+      config {
+        image        = "traefik:2.10"
+        network_mode = "host"
+        ports        = ["http", "admin"]
+        volumes      = ["local/traefik.yaml:/etc/traefik/traefik.yaml"]
+      }
 
-            config {
-                image = "traefik:2.10"
-                network_mode = "host"
-                ports = ["admin", "http"]
-                args = [
-...
-                    # https://doc.traefik.io/traefik/providers/nomad/
-                    "--providers.nomad=true",
-                    "--providers.nomad.endpoint.address=http://${NOMAD_IP_http}:4646",
-                    "--providers.nomad.endpoint.token=${var.nomad_token}",
-                ]
-            }
-        }
-    }
-}
+      template {
+        # https://developer.hashicorp.com/nomad/tutorials/load-balancing/load-balancing-traefik
+        data = <<EOF
+providers:
+  consulCatalog:
+    endpoint:
+      address: {{ env "NOMAD_IP_http" }}:8500
+      scheme: http
+      token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 ```
-
-- [Traefik Proxy Now Fully Integrates with Hashicorp Nomad](https://traefik.io/blog/traefik-proxy-fully-integrates-with-hashicorp-nomad/)
 
 ## Cloudflare Tunnel
 

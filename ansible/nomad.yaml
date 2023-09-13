@@ -98,7 +98,7 @@
         # nomad_cert_file: global-server-nomad.pem
         # nomad_key_file: global-server-nomad-key.pem
         nomad_encrypt_enable: true
-        nomad_encrypt: 3j+b/Ajzro3BGUT+hZLCzLbMgy/tQvMS6qwbhWGVDhQ=
+        nomad_encrypt:
 
         nomad_telemetry: true
         nomad_telemetry_disable_hostname: true

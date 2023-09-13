@@ -1,5 +1,6 @@
 ---
 - import_playbook: setup.yaml
+- import_playbook: pihole.yaml
 - import_playbook: docker.yaml
 - import_playbook: nomad.yaml
 - import_playbook: cloudflared.yaml

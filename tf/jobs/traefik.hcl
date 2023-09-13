@@ -39,6 +39,7 @@ job "traefik" {
 
       template {
         # https://developer.hashicorp.com/nomad/tutorials/load-balancing/load-balancing-traefik
+        # https://traefik.io/blog/integrating-consul-connect-service-mesh-with-traefik-2-5/?ref=traefik.io
         data = <<EOF
 entryPoints:
   web:
@@ -52,7 +53,7 @@ api:
 
 providers:
   consulCatalog:
-    exposedByDefault: false
+    exposedByDefault: true
     connectAware: true
     cache: false
     connectByDefault: false
