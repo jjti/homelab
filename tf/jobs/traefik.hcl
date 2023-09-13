@@ -1,7 +1,3 @@
-variable "nomad_token" {
-  type = string
-}
-
 job "traefik" {
   datacenters = ["dc1"]
   type        = "system"
@@ -18,17 +14,15 @@ job "traefik" {
     }
 
     service {
-      name     = "traefik-http"
-      provider = "nomad"
-      port     = "http"
+      name = "traefik-http"
+      port = "http"
 
       tags = ["traefik.enable=false"]
     }
 
     service {
-      name     = "traefik-admin-http"
-      provider = "nomad"
-      port     = "admin"
+      name = "traefik-admin-http"
+      port = "admin"
 
       tags = ["traefik.enable=false"]
     }
@@ -40,17 +34,39 @@ job "traefik" {
         image        = "traefik:2.10"
         network_mode = "host"
         ports        = ["http", "admin"]
-        args = [
-          "--api.insecure=true",
-          "--api.dashboard=true",
-          "--entrypoints.web.address=:${NOMAD_PORT_http}",
-          "--entrypoints.traefik.address=:${NOMAD_PORT_admin}",
+        volumes      = ["local/traefik.yaml:/etc/traefik/traefik.yaml"]
+      }
 
-          # https://doc.traefik.io/traefik/providers/nomad/
-          "--providers.nomad=true",
-          "--providers.nomad.endpoint.address=http://${NOMAD_IP_http}:4646",
-          "--providers.nomad.endpoint.token=${var.nomad_token}",
-        ]
+      template {
+        # https://developer.hashicorp.com/nomad/tutorials/load-balancing/load-balancing-traefik
+        data = <<EOF
+entryPoints:
+  web:
+    address: :{{ env "NOMAD_PORT_http" }}
+  traefik:
+    address: :{{ env "NOMAD_PORT_admin" }}
+
+api:
+  dashboard: true
+  insecure: true
+
+providers:
+  consulCatalog:
+    exposedByDefault: false
+    connectAware: true
+    cache: false
+    connectByDefault: false
+
+    endpoint:
+      address: {{ env "NOMAD_IP_http" }}:8500
+      scheme: http
+      token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
+
+metrics:
+  prometheus: true
+EOF
+
+        destination = "local/traefik.yaml"
       }
     }
   }

@@ -171,7 +171,7 @@ resource "cloudflare_access_application" "api" {
   allowed_idps              = []
 }
 
-resource "cloudflare_access_policy" "token" {
+resource "cloudflare_access_policy" "api_token" {
   application_id = cloudflare_access_application.api.id
   zone_id        = var.cloudflare_zone_id
   name           = "homelab service principal access policy"
@@ -186,4 +186,21 @@ resource "cloudflare_access_policy" "token" {
 resource "cloudflare_access_service_token" "token" {
   zone_id = var.cloudflare_zone_id
   name    = "homelab-token"
+}
+
+resource "cloudflare_access_policy" "api_github" {
+  application_id = cloudflare_access_application.api.id
+  zone_id        = var.cloudflare_zone_id
+  name           = "homelab github access policy"
+  precedence     = "2"
+  decision       = "allow"
+
+  include {
+    github {
+      identity_provider_id = cloudflare_access_identity_provider.github.id
+      name                 = "github"
+    }
+
+    email = ["joshua.timmons1@gmail.com"]
+  }
 }

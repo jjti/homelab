@@ -1,0 +1,10 @@
+.DS_Store
+.vagrant
+.tm_properties
+*.retry
+examples/hosts
+files/consul
+files/*
+tests/test_results.json
+*.pyc
+molecule/*/cache/

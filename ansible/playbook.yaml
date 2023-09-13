@@ -3,3 +3,4 @@
 - import_playbook: docker.yaml
 - import_playbook: nomad.yaml
 - import_playbook: cloudflared.yaml
+- import_playbook: minio.yaml

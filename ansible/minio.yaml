@@ -1,0 +1,137 @@
+- name: Install MinIO
+  hosts: ser
+  become: yes
+
+  # https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd
+  tasks:
+    - name: Install MinIO
+      ansible.builtin.apt:
+        deb: https://dl.min.io/server/minio/release/linux-amd64/archive/minio_20230907020502.0.0_amd64.deb
+
+    - name: Create minio-user group
+      ansible.builtin.group:
+        name: minio-user
+        state: present
+    - name: Add the minio-user user
+      ansible.builtin.user:
+        name: minio-user
+        shell: /bin/bash
+        groups: minio-user
+        append: yes
+    - name: Set mount ownership
+      ansible.builtin.file:
+        path: /mnt/sata
+        state: directory
+        recurse: yes
+        owner: minio-user
+        group: minio-user
+
+    - name: Create unit file
+      copy:
+        dest: /etc/systemd/system/minio.service
+        content: |
+          [Unit]
+          Description=MinIO
+          Documentation=https://min.io/docs/minio/linux/index.html
+          Wants=network-online.target
+          After=network-online.target
+          AssertFileIsExecutable=/usr/local/bin/minio
+
+          [Service]
+          WorkingDirectory=/usr/local
+
+          User=minio-user
+          Group=minio-user
+          ProtectProc=invisible
+
+          EnvironmentFile=-/etc/default/minio
+          ExecStartPre=/bin/bash -c "if [ -z \"${MINIO_VOLUMES}\" ]; then echo \"Variable MINIO_VOLUMES not set in /etc/default/minio\"; exit 1; fi"
+          ExecStart=/usr/local/bin/minio server $MINIO_OPTS $MINIO_VOLUMES
+
+          # MinIO RELEASE.2023-05-04T21-44-30Z adds support for Type=notify (https://www.freedesktop.org/software/systemd/man/systemd.service.html#Type=)
+          # This may improve systemctl setups where other services use `After=minio.server`
+          # Uncomment the line to enable the functionality
+          # Type=notify
+
+          # Let systemd restart this service always
+          Restart=always
+
+          # Specifies the maximum file descriptor number that can be opened by this process
+          LimitNOFILE=65536
+
+          # Specifies the maximum number of threads this process can create
+          TasksMax=infinity
+
+          # Disable timeout logic and wait until process is stopped
+          TimeoutStopSec=infinity
+          SendSIGKILL=no
+
+          [Install]
+          WantedBy=multi-user.target
+
+          # Built for ${project.name}-${project.version} (${project.name})
+
+    - name: Create config file
+      copy:
+        dest: /etc/default/minio
+        content: |
+          # Set the hosts and volumes MinIO uses at startup
+          # The command uses MinIO expansion notation {x...y} to denote a
+          # sequential series.
+
+          MINIO_VOLUMES="http://192.168.0.13{7...9}:9000/mnt/sata"
+
+          # Set all MinIO server options
+          #
+          # The following explicitly sets the MinIO Console listen address to
+          # port 9001 on all network interfaces. The default behavior is dynamic
+          # port selection.
+
+          MINIO_OPTS="--console-address :9001 --ftp='address=:8021' --ftp='passive-port-range=30000-40000'"
+
+          # Set the root username. This user has unrestricted permissions to
+          # perform S3 and administrative API operations on any resource in the
+          # deployment.
+          #
+          # Defer to your organizations requirements for superadmin user name.
+
+          MINIO_ROOT_USER=admin
+
+          # Set the root password
+          #
+          # Use a long, random, unique string that meets your organizations
+          # requirements for passwords.
+
+          MINIO_ROOT_PASSWORD={{ lookup('ansible.builtin.env', 'MINIO_ADMIN_PASSWORD') }}
+
+          # Set to the URL of the load balancer for the MinIO deployment
+          # This value *must* match across all MinIO servers. If you do
+          # not have a load balancer, set this value to to any *one* of the
+          # MinIO hosts in the deployment as a temporary measure.
+          MINIO_SERVER_URL="http://192.168.0.137:9000"
+
+    - name: Start MinIO
+      ansible.builtin.systemd:
+        state: restarted
+        enabled: true
+        daemon_reload: true
+        name: minio
+
+    - name: Check if mc binary exists in /usr/local/bin
+      stat:
+        path: "/usr/local/bin/mc"
+      register: mc_binary_stat
+      ignore_errors: yes
+
+    - name: Download mc binary
+      get_url:
+        url: "https://dl.min.io/client/mc/release/linux-amd64/mc"
+        dest: "/usr/local/bin/mc"
+        mode: "0755" # Make the downloaded file executable
+      when: not mc_binary_stat.stat.exists
+
+    - name: Verify mc installation
+      command: mc --version
+      register: mc_version_output
+      ignore_errors: yes # Ignore errors since we just installed mc
+      changed_when: false

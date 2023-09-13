@@ -5,6 +5,11 @@ terraform {
       version = "5.4.0"
     }
 
+    consul = {
+      source  = "hashicorp/consul"
+      version = "2.18.0"
+    }
+
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "4.14.0"
@@ -39,8 +44,12 @@ provider "aws" {
   }
 }
 
+provider "consul" {
+  address = "http://192.168.0.137:8500"
+}
+
 provider "nomad" {
-  address = "http://192.168.0.172:4646"
+  address = "http://192.168.0.137:4646"
 }
 
 provider "cloudflare" {}

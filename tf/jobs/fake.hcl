@@ -6,30 +6,41 @@ job "fake" {
     count = 1
 
     network {
-      port "http" {}
+      mode = "bridge"
     }
 
     service {
-      name     = "whoami-demo"
-      provider = "nomad"
-      port     = "http"
+      name = "whoami-demo"
+      port = "80"
 
       tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.http.rule=PathPrefix(`/fake`)",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.whoami.rule=PathPrefix(`/fake`)",
       ]
+
+      connect {
+        sidecar_service {
+          proxy {
+            local_service_port = 80
+          }
+        }
+      }
+
+      check {
+        expose   = true
+        type     = "http"
+        name     = "api-health"
+        path     = "/health"
+        interval = "10s"
+        timeout  = "3s"
+      }
     }
 
     task "server" {
-      env {
-        WHOAMI_PORT_NUMBER = "${NOMAD_PORT_http}"
-      }
-
       driver = "docker"
 
       config {
         image = "traefik/whoami"
-        ports = ["http"]
       }
     }
   }

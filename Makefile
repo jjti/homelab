@@ -9,8 +9,8 @@ hcl/fix:
 
 # tf
 .PHONY: tf
-tf: tf/fix
-	@cd tf && terraform init && terraform apply -auto-approve
+tf: tf/fix hcl/fix
+	@cd tf && terraform init && terraform apply -auto-approve -parallelism=30
 
 tf/fix:
 	@terraform fmt -recursive .

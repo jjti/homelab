@@ -30,16 +30,15 @@ resource "nomad_acl_token" "read" {
   policies = [nomad_acl_policy.read.name]
 }
 
-resource "nomad_job" "traefik" {
-  hcl2 {
-    vars = {
-      "nomad_token" = nomad_acl_token.read.secret_id,
-    }
+resource "nomad_variable" "traefik" {
+  path = "nomad/jobs/traefik"
+  items = {
+    read_token = data.consul_acl_token_secret_id.traefik.secret_id
   }
-
-  jobspec = file("${path.module}/jobs/traefik.hcl")
 }
 
-resource "nomad_job" "fake" {
-  jobspec = file("${path.module}/jobs/fake.hcl")
+resource "nomad_job" "jobs" {
+  for_each = fileset(path.module, "jobs/*")
+
+  jobspec = file("${path.module}/${each.key}")
 }
