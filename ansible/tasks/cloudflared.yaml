@@ -1,0 +1,25 @@
+- name: Install CloudFlare Tunnel
+  hosts: ser
+  become: true
+  tasks:
+    # Set up Cloud Flare Tunnel
+    # https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/install-and-setup/tunnel-guide/local/
+    - name: Install cloudflared
+      ansible.builtin.apt:
+        deb: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+
+    - name: Check if cloudflared unit exists
+      stat:
+        path: /etc/systemd/system/cloudflared.service
+      register: unit_check
+
+    - name: Install cloudflared
+      command: cloudflared service install {{ lookup('ansible.builtin.env', 'CLOUDFLARE_TUNNEL_SECRET') }}
+      when: not unit_check.stat.exists
+
+    - name: Start cloudflared
+      ansible.builtin.systemd:
+        state: restarted
+        enabled: true
+        daemon_reload: true
+        name: cloudflared

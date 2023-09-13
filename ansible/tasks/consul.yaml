@@ -1,0 +1,36 @@
+---
+- hosts: ser
+  become: true
+  roles:
+    - role: ansible-consul
+      vars:
+        auto_encrypt:
+          enabled: true
+        consul_acl_enable: true
+        consul_acl_master_token_display: true
+        consul_autopilot_enable: true
+        consul_bootstrap_expect: true
+        consul_bootstrap_expect_value: 3
+        consul_client_address: 0.0.0.0
+        consul_configd_path: /etc/consul
+        consul_group_name: ser
+        consul_ports_https: 8501
+        consul_ports_grpc_tls: 8503
+        consul_node_role: server
+        consul_tls_ca_crt: consul-agent-ca.pem
+        consul_tls_enable: true
+        consul_tls_server_crt: dc1-server-consul-0.pem
+        consul_tls_server_key: dc1-server-consul-0-key.pem
+        consul_tls_verify_incoming: true
+        consul_tls_verify_incoming_https: true
+        consul_tls_verify_incoming_rpc: true
+        consul_version: latest
+        consul_config_custom:
+          tls:
+            grpc:
+              verify_incoming: false
+          telemetry:
+            prometheus_retention_time: 1m
+          ui_config:
+            enabled: true
+            content_path: /consul

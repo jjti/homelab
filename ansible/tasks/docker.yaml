@@ -1,0 +1,26 @@
+- name: Install Docker
+  hosts: ser
+  become: true
+  tasks:
+    # Set up Docker
+    # https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-20-04
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+    - name: Update apt and install docker-ce
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+        state: latest
+        update_cache: true
+    - name: Start docker
+      ansible.builtin.systemd:
+        state: started
+        enabled: true
+        name: docker
