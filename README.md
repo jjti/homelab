@@ -142,29 +142,51 @@ providers:
 
 ## Cloudflare Tunnel
 
-I want to dispatch Nomad jobs from Github Actions, check the Traefik dashboard from a coffee shop, etc. I opt'ed for Cloudflare Tunnels to expose my homelab to the internet.
+I want to dispatch Nomad jobs from Github Actions. I opted for a Cloudflare Tunnel.
 
-I opted not to use [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies w/ IDPs, etc.
+I did not go with [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies w/ IDPs, etc.
 
-Each node runs `cloudflared` for a tunnel created with Terraform. The `cloudflared` processes point at the Traefik reverse proxies listening on port 80.
+Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host.
 
 ```hcl
+// creating a tunnel with a secret
 resource "cloudflare_tunnel" "auto_tunnel" {
   name       = "homelab"
   secret     = random_id.tunnel_secret.b64_std
 }
 
+// configuring egress to proxy to nomad
 resource "cloudflare_tunnel_config" "auto_tunnel" {
   tunnel_id  = cloudflare_tunnel.auto_tunnel.id
   account_id = var.cloudflare_account_id
 
   config {
-   ingress_rule {
-     hostname = cloudflare_record.homelab.hostname
-     service  = "http://localhost:80"
-   }
+    ingress_rule {
+      service = "http://localhost:4646"
+    }
   }
 }
+
+// skipping stuff
+
+// making an access policy associated w/ the domain that uses a cloudflare service token
+resource "cloudflare_access_policy" "nomad_token" {
+  application_id = cloudflare_access_application.nomad.id
+  zone_id        = var.cloudflare_zone_id
+  precedence     = "1"
+  decision       = "non_identity"
+
+  include {
+    service_token = [cloudflare_access_service_token.token.id]
+  }
+}
+
+// make the service token for machine <> machine calls
+resource "cloudflare_access_service_token" "token" {
+  zone_id = var.cloudflare_zone_id
+  name    = "homelab-token"
+}
+
 ```
 
 To restrict access I created an access service token, attached it to an access policy associated w/ the domain so I can call into the homelab from Github Actions:
@@ -179,7 +201,7 @@ curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://ho
 
 I tried really hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon...`. I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
 
-Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their (installation guide)[https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd] into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating an mounting the volume:
+Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their [installation guide](https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd) into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating an mounting the volume:
 
 ```yaml
 # ansible
