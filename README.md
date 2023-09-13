@@ -3,37 +3,26 @@
 ## Links
 
 - Consul: http://192.168.0.137:8500/consul/dc1/services
-- Nomad: https://nomad.joshuatimmons.com
-- Traefik: https://traefik.joshuatimmons.com
-- Grafana: https://joshuatimmons.com/grafana/
-
-## Tools
-
-### 1Password
-
-### Terraform
-
-### Ansible
+- Nomad: http://192.168.0.137:4646/ui/jobs
+- Traefik: http://192.168.0.137:8080/dashboard
+- Grafana: http://192.168.0.137/grafana
+- MinIO: http://192.168.0.137:9001/browser
 
 ## Consul
-
-I'm using Consul for service discovery, mTLS, and service intentions: https://developer.hashicorp.com/consul/docs/connect/connect-internals.
 
 Consul gets deployed using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul):
 
 ```bash
-cd ./ansible/roles/ansible-consul
-ansible-galaxy install -r ./requirements.yml
-
-cd ./files
+cd ./ansible/roles/ansible-consul/files
+ansible-galaxy install -r ../requirements.yml
 consul tls ca create
 consul tls cert create -server -dc dc1 -domain consul
-cd ../../..
+cd -
 
 ansible-playbook -i hosts.yaml ./tasks/consul.yaml
 ```
 
-`ansible-consul` with the `vars` in [`ansible/consul.yaml`](ansible/consul.yaml) gets configured with TLS, gossip encryption, ACLs bootstrapped, and Prometheus metrics enabled.
+`ansible-consul` with the `vars` in [`ansible/consul.yaml`](ansible/consul.yaml) gets configured with TLS, gossip encryption, ACLs, and Prometheus metrics.
 
 - [ansible-consul](https://github.com/ansible-community/ansible-consul)
 - [Consul production checklist](https://developer.hashicorp.com/consul/tutorials/production-deploy/production-checklist)
@@ -190,4 +179,48 @@ curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://ho
 
 I tried really hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon...`. I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
 
-Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their (installation guide)[https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd] into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts.
+Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their (installation guide)[https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd] into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating an mounting the volume:
+
+```yaml
+# ansible
+nomad_host_volumes:
+  - name: sata
+    path: /mnt/sata
+    owner: minio-user
+    group: minio-user
+    mode: "0755"
+    read_only: false
+```
+
+```hcl
+job "minio" {
+  datacenters = ["dc1"]
+  type        = "system"
+
+  group "minio" {
+    volume "minio" {
+      type      = "host"
+      source    = "sata"
+      read_only = false
+    }
+...
+    task "minio" {
+      driver = "docker"
+
+      config {
+        image        = "minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.60799aeb0"
+        network_mode = "host"
+        ports        = ["minio-api", "minio-console"]
+        args = ["server",
+          "--address", ":${NOMAD_PORT_minio_api}",
+          "--console-address", ":${NOMAD_PORT_minio_console}",
+          "http://192.168.0.13{7...9}:${NOMAD_PORT_minio_api}/mnt/sata", # cheating w/ the ips here
+        ]
+      }
+
+      volume_mount {
+        volume           = "minio"
+        destination      = "/mnt/sata"
+        propagation_mode = "private"
+      }
+```
