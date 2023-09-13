@@ -53,7 +53,7 @@ api:
 
 providers:
   consulCatalog:
-    exposedByDefault: true
+    exposedByDefault: false
     connectAware: true
     cache: false
     connectByDefault: false

@@ -44,6 +44,14 @@ resource "nomad_variable" "pihole" {
   }
 }
 
+resource "nomad_variable" "minio" {
+  path = "nomad/jobs/minio"
+  items = {
+    password = random_id.minio_password.b64_std
+  }
+}
+
+
 resource "nomad_job" "jobs" {
   for_each = fileset(path.module, "jobs/*")
 

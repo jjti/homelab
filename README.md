@@ -30,7 +30,7 @@ consul tls ca create
 consul tls cert create -server -dc dc1 -domain consul
 cd ../../..
 
-ansible-playbook -i inventory.yaml ./consul.yaml
+ansible-playbook -i hosts.yaml ./tasks/consul.yaml
 ```
 
 `ansible-consul` with the `vars` in [`ansible/consul.yaml`](ansible/consul.yaml) gets configured with TLS, gossip encryption, ACLs bootstrapped, and Prometheus metrics enabled.
@@ -43,7 +43,7 @@ ansible-playbook -i inventory.yaml ./consul.yaml
 Nomad orchestrates and deploys the rest of the services. At first I wrote my own playbook. But then I found `ansible-nomad` which -- while a bit out of date -- is way better: https://github.com/ansible-community/ansible-nomad
 
 ```bash
-ansible-playbook -i inventory.yaml ./nomad.yaml
+ansible-playbook -i hosts.yaml ./tasks/nomad.yaml
 ```
 
 ### Docs
