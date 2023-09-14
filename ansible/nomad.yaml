@@ -5,6 +5,12 @@
   # Download CNI plugins
   # https://developer.hashicorp.com/nomad/docs/install#post-installation-steps
   pre_tasks:
+    # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/
+    - name: Create the grafana dashboard directory (mount)
+      file:
+        path: /usr/local/var/lib/grafana
+        state: directory
+
     - name: Check if files already exist in /opt/cni/bin
       stat:
         path: /opt/cni/bin
@@ -114,7 +120,16 @@
             group: minio-user
             mode: "0755"
             read_only: false
+          - name: grafana
+            path: /usr/local/var/lib/grafana
+            owner: root
+            group: root
+            mode: "0755"
+            read_only: false
 
         nomad_config_custom:
           ui:
             enabled: true
+          consul:
+            grpc_address: "127.0.0.1:8503"
+            grpc_ca_file: /etc/consul/ssl/consul-agent-ca.pem

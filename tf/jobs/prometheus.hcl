@@ -9,7 +9,7 @@ job "prometheus" {
     }
 
     service {
-      name = "prometheus-http"
+      name = "prometheus"
       port = "http"
 
       tags = [
@@ -20,7 +20,6 @@ job "prometheus" {
 
     task "scrape" {
       driver = "docker"
-
 
       config {
         image = "prom/prometheus:latest"

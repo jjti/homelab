@@ -4,27 +4,40 @@ job "traefik" {
 
   group "traefik" {
     network {
+      mode = "host"
+
       port "http" {
-        static = 80
+        static = "80"
       }
 
       port "admin" {
-        static = 8080
+        static = "8080"
       }
     }
 
     service {
-      name = "traefik-http"
+      name = "traefik"
       port = "http"
 
-      tags = ["traefik.enable=false"]
+      tags = [
+        "traefik.enable=false",
+      ]
     }
 
     service {
-      name = "traefik-admin-http"
+      name = "traefik-dashboard"
       port = "admin"
 
-      tags = ["traefik.enable=false"]
+      tags = [
+        "traefik.enable=false",
+      ]
+
+      check {
+        type     = "http"
+        path     = "/ping"
+        interval = "10s"
+        timeout  = "2s"
+      }
     }
 
     task "server" {
@@ -38,6 +51,7 @@ job "traefik" {
       }
 
       template {
+        destination = "local/traefik.yaml"
         # https://developer.hashicorp.com/nomad/tutorials/load-balancing/load-balancing-traefik
         # https://traefik.io/blog/integrating-consul-connect-service-mesh-with-traefik-2-5/?ref=traefik.io
         data = <<EOF
@@ -52,22 +66,26 @@ api:
   insecure: true
 
 providers:
+  # set up connect catalog
   consulCatalog:
-    exposedByDefault: false
-    connectAware: true
     cache: false
+    connectAware: true
     connectByDefault: false
+    exposedByDefault: false
 
     endpoint:
-      address: {{ env "NOMAD_IP_http" }}:8500
+      address: 127.0.0.1:8500
       scheme: http
       token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 
 metrics:
-  prometheus: true
-EOF
+  prometheus: true 
 
-        destination = "local/traefik.yaml"
+log:
+  level: DEBUG
+
+ping: {}
+EOF
       }
     }
   }

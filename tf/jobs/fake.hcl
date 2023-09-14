@@ -3,15 +3,17 @@ job "fake" {
   type        = "service"
 
   group "fake" {
-    count = 1
+    count = 2
 
     network {
       mode = "bridge"
+
+      port "fake" {}
     }
 
     service {
       name = "whoami-demo"
-      port = "80"
+      port = "fake"
 
       tags = [
         "traefik.consulcatalog.connect=true",
@@ -25,15 +27,6 @@ job "fake" {
           }
         }
       }
-
-      check {
-        expose   = true
-        type     = "http"
-        name     = "api-health"
-        path     = "/health"
-        interval = "10s"
-        timeout  = "3s"
-      }
     }
 
     task "server" {
@@ -41,6 +34,7 @@ job "fake" {
 
       config {
         image = "traefik/whoami"
+        ports = ["fake"]
       }
     }
   }

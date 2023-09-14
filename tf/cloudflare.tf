@@ -2,6 +2,7 @@
 
 locals {
   nomad_hostname = "nomad.${var.cloudflare_domain}"
+  ssh_hostname   = "ssh.${var.cloudflare_domain}"
 }
 
 resource "cloudflare_record" "record" {
@@ -28,6 +29,14 @@ resource "cloudflare_record" "record_nomad" {
   proxied = true
 }
 
+resource "cloudflare_record" "record_ssh" {
+  name    = "ssh"
+  zone_id = var.cloudflare_zone_id
+  value   = cloudflare_tunnel.auto_tunnel.cname
+  type    = "CNAME"
+  proxied = true
+}
+
 resource "random_id" "tunnel_secret" {
   byte_length = 35
 }
@@ -45,6 +54,11 @@ resource "cloudflare_tunnel_config" "auto_tunnel" {
   config {
     origin_request {
       no_tls_verify = true
+    }
+
+    ingress_rule {
+      hostname = local.ssh_hostname
+      service  = "ssh://localhost:22"
     }
 
     ingress_rule {
@@ -82,4 +96,46 @@ resource "cloudflare_access_policy" "nomad_token" {
 resource "cloudflare_access_service_token" "token" {
   zone_id = var.cloudflare_zone_id
   name    = "homelab-token"
+}
+
+###
+# SSH
+###
+
+resource "cloudflare_access_application" "ssh" {
+  zone_id                   = var.cloudflare_zone_id
+  name                      = "homelab ssh access"
+  domain                    = local.ssh_hostname
+  type                      = "self_hosted"
+  session_duration          = "2h"
+  auto_redirect_to_identity = true
+  allowed_idps              = [cloudflare_access_identity_provider.github.id]
+}
+
+resource "cloudflare_access_policy" "github" {
+  application_id = cloudflare_access_application.ssh.id
+  zone_id        = var.cloudflare_zone_id
+  name           = "homelab github access policy"
+  precedence     = "1"
+  decision       = "allow"
+
+  include {
+    github {
+      identity_provider_id = cloudflare_access_identity_provider.github.id
+      name                 = "github"
+    }
+
+    email = ["joshua.timmons1@gmail.com"]
+  }
+}
+
+resource "cloudflare_access_identity_provider" "github" {
+  zone_id = var.cloudflare_zone_id
+  name    = "GitHub OAuth"
+  type    = "github"
+
+  config {
+    client_id     = var.github_idp_client_id
+    client_secret = var.github_idp_client_secret
+  }
 }

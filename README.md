@@ -13,7 +13,7 @@ The main reason I opt'ed the SER5 Max was they're cheap (~$350 each), have low p
 
 ## Consul
 
-Consul gets deployed using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul):
+Consul gets deployed using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul). Compared to deploying Consul manually, `ansible-consul` has more knobs, sanity checks, and baked-in best practices. It's also nice for setting things up once, then automating away the tedious part of SSH'ing into every host. But `ansible-consul` is also very stale and the defaults are for development Consul clients. I've changed a couple dozen settings in [./ansible/tasks/consul.yaml](./ansible/consul.yaml) so far to enable TLS, gossip encryption, ACLs, and prometheus metrics.
 
 ```bash
 cd ./ansible/roles/ansible-consul/files
@@ -25,14 +25,12 @@ cd -
 ansible-playbook -i hosts.yaml ./tasks/consul.yaml
 ```
 
-`ansible-consul` with the `vars` in [`ansible/consul.yaml`](ansible/consul.yaml) gets configured with TLS, gossip encryption, ACLs, and Prometheus metrics.
-
 - [ansible-consul](https://github.com/ansible-community/ansible-consul)
 - [Consul production checklist](https://developer.hashicorp.com/consul/tutorials/production-deploy/production-checklist)
 
 ## Nomad
 
-Nomad orchestrates and deploys the rest of the services. At first I wrote my own playbook. But then I found `ansible-nomad` which -- while a bit out of date -- is way better: https://github.com/ansible-community/ansible-nomad
+Nomad orchestrates and deploys the rest of the services (besides itself and Consul). When I was deploying it I first wrote an Ansible playbook. But then I found `ansible-nomad`: https://github.com/ansible-community/ansible-nomad.
 
 ```bash
 ansible-playbook -i hosts.yaml ./tasks/nomad.yaml
@@ -102,19 +100,7 @@ Unfortunately for me, ansible-nomad is stale and has [`nomad_no_host_uuid: no` a
 
 ## Traefik
 
-Cloudflare Tunnels point at Traefik and use Traefik to route between the rest of the services in the homelab using Nomad's built in service discovery. I create one allocation of Traefik on each node using a [system type job](https://developer.hashicorp.com/nomad/docs/job-specification/job#type):
-
-```hcl
-// jobs/traefik.hcl
-job "traefik" {
-    datacenters = ["dc1"]
-    type        = "system
-
-    group "traefik" {
-...
-```
-
-And configure Traefik to get service instances from Nomad with a read-only token created in TF:
+Traefik routes to some of the services using Consul service discovery. I create one allocation of Traefik on each node using a [system type job](https://developer.hashicorp.com/nomad/docs/job-specification/job#type). And create a read-only Consul token that I pass to Traefik through a Nomad Variable:
 
 ```hcl
 // tf/nomad.tf
@@ -123,8 +109,16 @@ resource "nomad_variable" "traefik" {
   items = {
     read_token = data.consul_acl_token_secret_id.traefik.secret_id
   }
+}
 
 // jobs/traefik.hcl
+job "traefik" {
+    datacenters = ["dc1"]
+    type        = "system
+
+    group "traefik" {
+...
+
       config {
         image        = "traefik:2.10"
         network_mode = "host"
@@ -134,22 +128,33 @@ resource "nomad_variable" "traefik" {
 
       template {
         # https://developer.hashicorp.com/nomad/tutorials/load-balancing/load-balancing-traefik
-        data = <<EOF
+        destination = "local/traefik.yaml"
+        data        = <<EOF
+...
 providers:
   consulCatalog:
+    exposedByDefault: false
+    connectAware: true
+    cache: false
+    connectByDefault: false
+
     endpoint:
       address: {{ env "NOMAD_IP_http" }}:8500
       scheme: http
       token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 ```
 
+I haven't spent the time to wire all the services into Traefik (yet). For some services like Nomad it's tricky because you can't configure the path the UI queries: ([eg Github thread for Nomad](https://github.com/hashicorp/nomad/issues/4479)). So if I put Nomad behind the `/nomad` path, the UI would blissfully query the `/ui` path that gets routed to nothing.
+
+I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` since it's faster.
+
 ## Cloudflare Tunnel
 
-I want to dispatch Nomad jobs from Github Actions. I opted for a Cloudflare Tunnel.
+I want to dispatch Nomad jobs into the homelab from Github Actions. I thought about setting up a daemon that pulls configs from an S3 bucket that I push to Github Actions, to avoid exposing my home network to the internet, but opted instead for a Cloudflare Tunnel (throwing most security concerns into the trash).
 
-I did not go with [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies w/ IDPs, etc.
+I didn't choose [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies w/ IDPs, etc.
 
-Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host.
+Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host:
 
 ```hcl
 // creating a tunnel with a secret
@@ -192,13 +197,46 @@ resource "cloudflare_access_service_token" "token" {
 
 ```
 
-To restrict access I created an access service token, attached it to an access policy associated w/ the domain so I can call into the homelab from Github Actions:
+To restrict access to GHA, I use the access service token (`cloudflare_access_service_token.token`) attached to the domain's access policy:
 
 ```bash
-curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://homelab.example.com
+# this calls the nomad api
+curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://nomad.homelab.com
 ```
 
+### sshuttle
+
+I use a combination and `sshuttle` and `cloudflared` to access services' UIs when not at home.
+
+I do it with an ingress rule for `cloudflared` using Github as an IdP:
+
+```hcl
+  config {
+    // ingress rule pointing at the ssh server
+    ingress_rule {
+      hostname = "ssh.homelab.com"
+      service  = "ssh://localhost:22"
+    }
+
+    ingress_rule {
+      service = "http://localhost:4646"
+    }
+```
+
+A configuration for my client `ssh` to use `cloudflared` as a proxy:
+
+```txt
+Host homelab
+    ProxyCommand cloudflared access ssh --hostname ssh.homelab.com
+    StrictHostKeyChecking no
+    User josh
+```
+
+And can then remotely access any service in the homelab with `sshuttle -NHr homelab 0/0`.
+
 - [Cloudflare Tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+- [Connect with SSH through Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/use-cases/ssh/)
+- [sshuttle usage](https://sshuttle.readthedocs.io/en/stable/usage.html)
 
 ## MinIO
 
@@ -207,7 +245,7 @@ I tried really hard to make Ceph work. I wanted both a distributed filesystem pl
 Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their [installation guide](https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd) into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating an mounting the volume:
 
 ```yaml
-# ansible
+# ansible-nomad var
 nomad_host_volumes:
   - name: sata
     path: /mnt/sata
@@ -218,6 +256,8 @@ nomad_host_volumes:
 ```
 
 ```hcl
+// tf/jobs/minio.hcl
+
 job "minio" {
   datacenters = ["dc1"]
   type        = "system"

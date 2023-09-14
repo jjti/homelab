@@ -1,4 +1,8 @@
-resource "random_id" "minio_password" {
-  byte_length = 35
+resource "random_password" "minio" {
+  length  = 18
+  special = false
 }
 
+# resource "minio_s3_bucket" "loki" {
+#   bucket = "loki"
+# }

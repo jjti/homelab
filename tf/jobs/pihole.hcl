@@ -16,8 +16,9 @@ job "pihole" {
     }
 
     service {
-      name = "pihole-http"
+      name = "pihole"
       port = "dashboard"
+
       tags = [
         "traefik.enable=true",
         "traefik.http.routers.pihole.rule=PathPrefix(`/admin`)",
@@ -37,7 +38,7 @@ job "pihole" {
         destination = ".env"
         env         = true
         data        = <<EOF
-TZ          = America/ New_York
+TZ          = America/New_York
 WEB_PORT    = {{ env "NOMAD_PORT_dashboard" }}
 WEBPASSWORD = {{ with nomadVar "nomad/jobs/pihole" }}{{ .password }}{{ end }}
 EOF

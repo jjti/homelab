@@ -24,6 +24,11 @@ terraform {
       source  = "hashicorp/random"
       version = "3.5.1"
     }
+
+    minio = {
+      source  = "aminueza/minio"
+      version = "1.18.0"
+    }
   }
 
   backend "s3" {
@@ -44,12 +49,17 @@ provider "aws" {
   }
 }
 
+provider "cloudflare" {}
+
 provider "consul" {
   address = "http://192.168.0.137:8500"
+}
+
+provider "minio" {
+  minio_server = "192.168.0.137:9000"
+  minio_user   = "admin"
 }
 
 provider "nomad" {
   address = "http://192.168.0.137:4646"
 }
-
-provider "cloudflare" {}
