@@ -82,6 +82,7 @@
         nomad_docker_enable: false
         nomad_docker_dmsetup: false
         nomad_bind_address: 0.0.0.0
+        nomad_syslog_enable: false
 
         nomad_use_consul: true
         nomad_network_interface: enp1s0
@@ -126,6 +127,12 @@
             group: root
             mode: "0755"
             read_only: false
+          - name: root
+            path: /
+            owner: root
+            group: bin
+            mode: "0755"
+            read_only: true
 
         nomad_config_custom:
           ui:

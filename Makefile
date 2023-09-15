@@ -1,3 +1,8 @@
+# ssh
+.PHONY: ssh
+ssh:
+	sshuttle -NHr homelab 0/0
+
 # ansible
 .PHONY: ansible
 ansible:
@@ -11,7 +16,7 @@ ansible/nomad:
 
 # hcl
 hcl/fix:
-	@go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./tf/jobs/*
+	@go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*
 
 # tf
 .PHONY: tf

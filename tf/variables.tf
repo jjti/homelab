@@ -17,3 +17,7 @@ variable "github_idp_client_id" {
 variable "github_idp_client_secret" {
   type = string
 }
+
+variable "nr_api_key" {
+  type = string
+}

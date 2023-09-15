@@ -21,6 +21,7 @@ job "traefik" {
 
       tags = [
         "traefik.enable=false",
+        "log-${attr.unique.hostname}"
       ]
     }
 
@@ -40,7 +41,7 @@ job "traefik" {
       }
     }
 
-    task "server" {
+    task "traefik" {
       driver = "docker"
 
       config {
@@ -82,7 +83,7 @@ metrics:
   prometheus: true 
 
 log:
-  level: DEBUG
+  level: INFO
 
 ping: {}
 EOF

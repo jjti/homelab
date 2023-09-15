@@ -21,6 +21,14 @@ resource "nomad_acl_policy" "read" {
 namespace "default" {
   policy = "read"
 }
+
+agent {
+  policy = "read"
+}
+
+node {
+  policy = "read"
+}
 EOT
 }
 
@@ -47,19 +55,19 @@ resource "nomad_variable" "pihole" {
 resource "nomad_variable" "minio" {
   path = "nomad/jobs/minio"
   items = {
-    password = random_password.minio.result
-  }
-}
-
-resource "nomad_variable" "loki" {
-  path = "nomad/jobs/loki"
-  items = {
     minio_password = random_password.minio.result
   }
 }
 
+resource "nomad_variable" "otel" {
+  path = "nomad/jobs/otel"
+  items = {
+    nr_api_key = var.nr_api_key
+  }
+}
+
 resource "nomad_job" "jobs" {
-  for_each = fileset(path.module, "jobs/*")
+  for_each = fileset(path.module, "../nomad/*")
 
   jobspec = file("${path.module}/${each.key}")
 }

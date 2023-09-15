@@ -31,6 +31,8 @@ job "minio" {
         interval = "10s"
         timeout  = "2s"
       }
+
+      tags = ["log-${attr.unique.hostname}"]
     }
 
     service {
@@ -71,7 +73,7 @@ job "minio" {
         data        = <<EOF
 MINIO_VOLUMES       = '{{ range service "consul" }}http://{{ .Address }}:9000/mnt/sata {{ end }}'
 MINIO_ROOT_USER     = admin
-MINIO_ROOT_PASSWORD = {{ with nomadVar "nomad/jobs/minio" }}{{ .password }}{{ end }}
+MINIO_ROOT_PASSWORD = {{ with nomadVar "nomad/jobs/minio" }}{{ .minio_password }}{{ end }}
 EOF
       }
     }

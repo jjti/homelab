@@ -5,15 +5,22 @@
 <img width="500px" src="https://github.com/jjti/homelab/assets/13923102/6a97ead1-d26e-4056-8fbc-c2fc2da03fb1" />
 
 The homelab is made up of three [Beelink Mini SER5 Maxes](https://www.bee-link.com/beelink-amd-ryzen-5-ser5-5800u-minip-26183466). Each has 32 GB DDR4 of memory and 500 GB of NVMe storage. I also added [2 TB of SSD storage to each](https://www.amazon.com/dp/B07YD5F561). So in total there's:
+
 - 24 cores / 48 threads
 - 96 GB memory
 - 1.5 TB NVMe storage and 6 TB SATA storage
 
-The main reason I opt'ed the SER5 Max was they're cheap (~$350 each), have low power draw (advertised at 54 W per node), and they don't take up much space. That said, everything is slower in these compared to a consumer desktop: the 5800H is a laptop CPU, storage is over PCIe 3 not 4, and it's DDR4 memory.  That's all fine though since this is to tinker.
+The main reason I opt'ed the SER5 Max was they're cheap (~$350 each), have low power draw (advertised at 54 W per node), and they don't take up much space. That said, everything is slower in these compared to a consumer desktop: the 5800H is a laptop CPU, storage is over PCIe 3 not 4, and it's DDR4 memory. That's all fine though since this is to tinker.
+
+## Deployments
+
+TODO
+
+TODO: move most of below into set up sections
 
 ## Consul
 
-Consul gets deployed using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul). Compared to deploying Consul manually, `ansible-consul` has more knobs, sanity checks, and baked-in best practices. It's also nice for setting things up once, then automating away the tedious part of SSH'ing into every host. But `ansible-consul` is also very stale and the defaults are for development Consul clients. I've changed a couple dozen settings in [./ansible/tasks/consul.yaml](./ansible/consul.yaml) so far to enable TLS, gossip encryption, ACLs, and prometheus metrics.
+Consul is used as a service catalog and to bootstrap Nomad. I deployed it using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul). Compared to deploying Consul manually, `ansible-consul` has more knobs, sanity checks, and baked-in best practices. It's also nice for setting things up once, then automating away the tedious part of SSH'ing into every host. But `ansible-consul` is also very stale and the defaults are for development Consul clients. I've changed a couple dozen settings in [./ansible/tasks/consul.yaml](./ansible/consul.yaml) to enable TLS, gossip encryption, ACLs, and prometheus metrics.
 
 ```bash
 cd ./ansible/roles/ansible-consul/files
@@ -35,8 +42,6 @@ Nomad orchestrates and deploys the rest of the services (besides itself and Cons
 ```bash
 ansible-playbook -i hosts.yaml ./tasks/nomad.yaml
 ```
-
-### Docs
 
 - [ansible-nomad](https://github.com/ansible-community/ansible-nomad)
 - [Bootstrap Nomad ACL System](https://developer.hashicorp.com/nomad/tutorials/access-control/access-control-bootstrap)
@@ -144,15 +149,15 @@ providers:
       token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 ```
 
-I haven't spent the time to wire all the services into Traefik (yet). For some services like Nomad it's tricky because you can't configure the path the UI queries: ([eg Github thread for Nomad](https://github.com/hashicorp/nomad/issues/4479)). So if I put Nomad behind the `/nomad` path, the UI would blissfully query the `/ui` path that gets routed to nothing.
+I haven't spent the time to wire all the services into Traefik (yet). It's tricky with services like Nomad because you can't configure the path the UI queries: ([eg Github thread for Nomad](https://github.com/hashicorp/nomad/issues/4479)). So even if I put Nomad behind `/nomad` in Traefik the UI will blissfully query the (default) `/ui` path that 404s.
 
-I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` since it's faster.
+I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` and `host` networking since it's faster.
 
 ## Cloudflare Tunnel
 
-I want to dispatch Nomad jobs into the homelab from Github Actions. I thought about setting up a daemon that pulls configs from an S3 bucket that I push to Github Actions, to avoid exposing my home network to the internet, but opted instead for a Cloudflare Tunnel (throwing most security concerns into the trash).
+I want to dispatch Nomad jobs into the homelab from Github Actions. I thought about setting up a daemon that pulls configs from an S3 bucket that I push to Github Actions, to avoid exposing my home network to the internet, but opted instead for a Cloudflare Tunnel (throwing security concerns in the garbage).
 
-I didn't choose [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies w/ IDPs, etc.
+I didn't choose [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies, IdP-support, etc.
 
 Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host:
 
@@ -163,7 +168,7 @@ resource "cloudflare_tunnel" "auto_tunnel" {
   secret     = random_id.tunnel_secret.b64_std
 }
 
-// configuring egress to proxy to nomad
+// configuring egress to Nomad
 resource "cloudflare_tunnel_config" "auto_tunnel" {
   tunnel_id  = cloudflare_tunnel.auto_tunnel.id
   account_id = var.cloudflare_account_id
@@ -197,7 +202,7 @@ resource "cloudflare_access_service_token" "token" {
 
 ```
 
-To restrict access to GHA, I use the access service token (`cloudflare_access_service_token.token`) attached to the domain's access policy:
+I can then use the access service token (`cloudflare_access_service_token.token` above) to access Nomad remotely:
 
 ```bash
 # this calls the nomad api
@@ -240,9 +245,9 @@ And can then remotely access any service in the homelab with `sshuttle -NHr home
 
 ## MinIO
 
-I tried really hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon...`. I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
+I tried pretty fucking hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon...`. I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
 
-Installing MinIO was so much simpler to install that it made me even more pissed at Ceph. In 10 minutes I copied their [installation guide](https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd) into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating an mounting the volume:
+Installing MinIO was so much simpler that I became even more pissed at Ceph. In 10 minutes I copied their [installation guide](https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd) into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating and mounting the volume:
 
 ```yaml
 # ansible-nomad var
@@ -289,3 +294,7 @@ job "minio" {
         propagation_mode = "private"
       }
 ```
+
+## Secrets
+
+TODO: 1Password and TF integration.
