@@ -40,7 +40,6 @@ Consul is used as a service catalog -- to configure Traefik -- and to bootstrap 
 - [Consul production checklist](https://developer.hashicorp.com/consul/tutorials/production-deploy/production-checklist)
 
 <details>
-
 <summary>ansible-consul</summary>
 
 I deployed it using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul).
@@ -149,7 +148,6 @@ I haven't spent the time to wire _all_ the services into Traefik (yet). It's tri
 I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` and `host` networking since it's faster.
 
 <details>
-
 <summary>Traefik configuration</summary>
 
 I create one allocation of Traefik on each node using a [system type job](https://developer.hashicorp.com/nomad/docs/job-specification/job#type). And create a read-only Consul token that I pass to Traefik through a Nomad Variable:
@@ -209,7 +207,6 @@ curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://no
 I didn't choose [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies, IdP-support, etc.
 
 <details>
-
 <summary>Cloudflare configuration</summary>
 
 Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host:
@@ -273,8 +270,7 @@ I use a combination and `sshuttle` and `cloudflared` to access services' UIs whe
 - [sshuttle usage](https://sshuttle.readthedocs.io/en/stable/usage.html)
 
 <details>
-
-<summary>sshuttle config</summary>
+<summary>sshuttle configuration</summary>
 
 I do it with an ingress rule for `cloudflared` using Github as an IdP:
 
@@ -311,7 +307,7 @@ And can then remotely access any service in the homelab with `sshuttle -NHr home
 MinIO is a distributed storage engine with an S3-compatible interface. It means I can write data from one node into MinIO and access it from applications running on other nodes, and have some redundancy during deployments or restarts of any one of the nodes.
 
 <details>
-<summary>MinIO config</summary>
+<summary>MinIO configuration</summary>
 
 I tried hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon`... I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
 
