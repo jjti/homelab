@@ -121,7 +121,8 @@ processors:
   attributes:
     actions:
       - key: host
-        action: {{ env "attr.unique.hostname" }}
+        value: {{ env "attr.unique.hostname" }} 
+        action: insert
 
 exporters:
   otlp:
