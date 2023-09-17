@@ -12,15 +12,40 @@ The homelab is made up of three [Beelink Mini SER5 Maxes](https://www.bee-link.c
 
 The main reason I opt'ed the SER5 Max was they're cheap (~$350 each), have low power draw (advertised at 54 W per node), and they don't take up much space. That said, everything is slower in these compared to a consumer desktop: the 5800H is a laptop CPU, storage is over PCIe 3 not 4, and it's DDR4 memory. That's all fine though since this is to tinker.
 
-## Deployments
+## Deployment
 
-TODO
+### Terraform
 
-TODO: move most of below into set up sections
+I use Nomad job specs created in Terraform with the [`nomad_job` resource](https://registry.terraform.io/providers/hashicorp/nomad/latest/docs/resources/job) to deploy applications into the homelab. Secrets are populated from 1Password.
 
-## Consul
+```bash
+# deploy job specs to Nomad, configure Cloudflare, etc
+make tf
+```
 
-Consul is used as a service catalog and to bootstrap Nomad. I deployed it using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul). Compared to deploying Consul manually, `ansible-consul` has more knobs, sanity checks, and baked-in best practices. It's also nice for setting things up once, then automating away the tedious part of SSH'ing into every host. But `ansible-consul` is also very stale and the defaults are for development Consul clients. I've changed a couple dozen settings in [./ansible/tasks/consul.yaml](./ansible/consul.yaml) to enable TLS, gossip encryption, ACLs, and prometheus metrics.
+```hcl
+# tf/nomad.tf
+resource "nomad_job" "jobs" {
+  for_each = fileset(path.module, "../nomad/*")
+
+  jobspec = file("${path.module}/${each.key}")
+}
+```
+
+### Consul
+
+Consul is used as a service catalog -- to configure Traefik -- and to bootstrap Nomad.
+
+- [ansible-consul](https://github.com/ansible-community/ansible-consul)
+- [Consul production checklist](https://developer.hashicorp.com/consul/tutorials/production-deploy/production-checklist)
+
+<details>
+
+<summary>ansible-consul</summary>
+
+I deployed it using the [`ansible-consul` role](https://github.com/ansible-community/ansible-consul).
+
+Compared to deploying Consul manually, `ansible-consul` has more knobs, sanity checks, and baked-in best practices. It's also nice for setting things up once, then automating away the tedious part of SSH'ing into every host. But `ansible-consul` is also very stale and the defaults are for development Consul clients. I've changed a couple dozen settings in [./ansible/tasks/consul.yaml](./ansible/consul.yaml) to enable TLS, gossip encryption, ACLs, and prometheus metrics.
 
 ```bash
 cd ./ansible/roles/ansible-consul/files
@@ -32,10 +57,9 @@ cd -
 ansible-playbook -i hosts.yaml ./tasks/consul.yaml
 ```
 
-- [ansible-consul](https://github.com/ansible-community/ansible-consul)
-- [Consul production checklist](https://developer.hashicorp.com/consul/tutorials/production-deploy/production-checklist)
+</details>
 
-## Nomad
+### Nomad
 
 Nomad orchestrates and deploys the rest of the services (besides itself and Consul). When I was deploying it I first wrote an Ansible playbook. But then I found `ansible-nomad`: https://github.com/ansible-community/ansible-nomad.
 
@@ -47,7 +71,9 @@ ansible-playbook -i hosts.yaml ./tasks/nomad.yaml
 - [Bootstrap Nomad ACL System](https://developer.hashicorp.com/nomad/tutorials/access-control/access-control-bootstrap)
 - [Nomad ACL policies](https://developer.hashicorp.com/nomad/tutorials/access-control/access-control-policies)
 
-### PITA Bug from Beelink Product ID
+<details>
+
+<summary>PITA bug from Beelink Product ID</summary>
 
 While setting up Nomad I hit an annoying bug where 2 of 3 clients were unable to register themselves:
 
@@ -103,9 +129,30 @@ This is still weird though because Nomad defaults to generating a unique `client
 
 Unfortunately for me, ansible-nomad is stale and has [`nomad_no_host_uuid: no` as a default](https://github.com/ansible-community/ansible-nomad#nomad_no_host_uuid). I thought I worked around that by setting it to `yes` during one of the reinstalls, but I didn't delete the stale `/var/nomad/client/client-id` file so they stuck around.
 
-## Traefik
+</details>
 
-Traefik routes to some of the services using Consul service discovery. I create one allocation of Traefik on each node using a [system type job](https://developer.hashicorp.com/nomad/docs/job-specification/job#type). And create a read-only Consul token that I pass to Traefik through a Nomad Variable:
+## Access
+
+There's two types of accessibility for the homelab:
+
+1. HTTP API access to services and Nomad
+2. SSH access to the homelab nodes
+
+I used [Cloudflare Tunnels](#cloudflare-tunnel) for address both. I create one egress configuration rule pointing at Traefik (for HTTP access to hosted APIs) and another pointing at the SSH server for remote access to Nomad, Consul, etc. I use `sshuttle` to get remote access to the result of services in the homelab.
+
+### Traefik
+
+Traefik routes to the services using Consul's catalog for service discovery.
+
+I haven't spent the time to wire _all_ the services into Traefik (yet). It's tricky with services like Nomad because you can't configure the path the UI queries: ([eg Github thread for Nomad](https://github.com/hashicorp/nomad/issues/4479)). So even if I put Nomad behind `/nomad` in Traefik the UI will blissfully query the (default) `/ui` path that 404s.
+
+I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` and `host` networking since it's faster.
+
+<details>
+
+<summary>Traefik configuration</summary>
+
+I create one allocation of Traefik on each node using a [system type job](https://developer.hashicorp.com/nomad/docs/job-specification/job#type). And create a read-only Consul token that I pass to Traefik through a Nomad Variable:
 
 ```hcl
 // tf/nomad.tf
@@ -149,15 +196,21 @@ providers:
       token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 ```
 
-I haven't spent the time to wire all the services into Traefik (yet). It's tricky with services like Nomad because you can't configure the path the UI queries: ([eg Github thread for Nomad](https://github.com/hashicorp/nomad/issues/4479)). So even if I put Nomad behind `/nomad` in Traefik the UI will blissfully query the (default) `/ui` path that 404s.
+</details>
 
-I also haven't spent the time moving everything into a service mesh. I should -- it would be nice to offload mTLS and intentions to Consul -- but I ran into a issue trying to join all the MinIO instances into a cluster (see: [MINIO_VOLUMES](https://min.io/docs/minio/linux/reference/minio-server/minio-server.html#envvar.MINIO_VOLUMES)). In theory I could use a [Nomad template that interpolates Consul `minio` service instances](https://developer.hashicorp.com/nomad/docs/job-specification/template#consul-services) but found it creates a chicken or the egg issue where MinIO won't start without `MINIO_VOLUMES` so then there's nothing to populate the `minio` service in Consul and fill the template. I've since found this `{{ service "web|any" }}` filter that should return all instances, health or otherwise, but I began to prefer to using `static = $port` and `host` networking since it's faster.
-
-## Cloudflare Tunnel
+### Cloudflare Tunnel
 
 I want to dispatch Nomad jobs into the homelab from Github Actions. I thought about setting up a daemon that pulls configs from an S3 bucket that I push to Github Actions, to avoid exposing my home network to the internet, but opted instead for a Cloudflare Tunnel (throwing security concerns in the garbage).
 
+```bash
+curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://nomad.homelab.com
+```
+
 I didn't choose [Tailscale Funnels](https://tailscale.com/kb/1247/funnel-serve-use-cases/) or Ngrok because Cloudflare has some extra nice-to-have features like domain management, access policies, IdP-support, etc.
+
+<details>
+
+<summary>Cloudflare configuration</summary>
 
 Each node runs `cloudflared` for a `cloudflare_tunnel` created with Terraform. The `cloudflared` process points at the Nomad endpoint on each host:
 
@@ -209,9 +262,19 @@ I can then use the access service token (`cloudflare_access_service_token.token`
 curl -H "CF-Access-Client-Id: xx" -H "CF-Access-Client-Secret: xx" -v https://nomad.homelab.com
 ```
 
+</details>
+
 ### sshuttle
 
-I use a combination and `sshuttle` and `cloudflared` to access services' UIs when not at home.
+I use a combination and `sshuttle` and `cloudflared` to access services' UIs when not at home like `sshuttle -NHr homelab 0/0`.
+
+- [Cloudflare Tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+- [Connect with SSH through Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/use-cases/ssh/)
+- [sshuttle usage](https://sshuttle.readthedocs.io/en/stable/usage.html)
+
+<details>
+
+<summary>sshuttle config</summary>
 
 I do it with an ingress rule for `cloudflared` using Github as an IdP:
 
@@ -239,13 +302,18 @@ Host homelab
 
 And can then remotely access any service in the homelab with `sshuttle -NHr homelab 0/0`.
 
-- [Cloudflare Tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
-- [Connect with SSH through Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/use-cases/ssh/)
-- [sshuttle usage](https://sshuttle.readthedocs.io/en/stable/usage.html)
+</details>
 
-## MinIO
+## Storage
 
-I tried pretty fucking hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon...`. I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
+### MinIO
+
+MinIO is a distributed storage engine with an S3-compatible interface. It means I can write data from one node into MinIO and access it from applications running on other nodes, and have some redundancy during deployments or restarts of any one of the nodes.
+
+<details>
+<summary>MinIO config</summary>
+
+I tried hard to make Ceph work. I wanted both a distributed filesystem plus an S3-compatible API. I tried `cephadm`, `ceph-ansible`, hoping from node to node running `systemctl restart ceph-mon`... I hit countless bugs and lost two days of my life and learned nothing except that Ceph is a beast. It felt like joining a backend team trying to set up the E2E test environment using a wiki two years out of date.
 
 Installing MinIO was so much simpler that I became even more pissed at Ceph. In 10 minutes I copied their [installation guide](https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html#minio-mnmd) into an [ansible playbook](./ansible/minio.yaml) and had it running across all the hosts. I then switched to running it in Nomad after creating and mounting the volume:
 
@@ -284,7 +352,6 @@ job "minio" {
         args = ["server",
           "--address", ":${NOMAD_PORT_minio_api}",
           "--console-address", ":${NOMAD_PORT_minio_console}",
-          "http://192.168.0.13{7...9}:${NOMAD_PORT_minio_api}/mnt/sata", # cheating w/ the ips here
         ]
       }
 
@@ -293,8 +360,13 @@ job "minio" {
         destination      = "/mnt/sata"
         propagation_mode = "private"
       }
+
+      template {
+        destination = ".env"
+        env         = true
+        data        = <<EOF
+MINIO_VOLUMES = '{{ range service "consul" }}http://{{ .Address }}:9000/mnt/sata {{ end }}'
+EOF
 ```
 
-## Secrets
-
-TODO: 1Password and TF integration.
+</details>

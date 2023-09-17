@@ -80,10 +80,14 @@ providers:
       token: {{ with nomadVar "nomad/jobs/traefik" }}{{ .read_token }}{{ end }}
 
 metrics:
-  prometheus: true 
+  prometheus: {}
 
 log:
   level: INFO
+  format: json
+
+tracing:
+  zipkin: {}
 
 ping: {}
 EOF

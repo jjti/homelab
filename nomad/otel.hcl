@@ -22,6 +22,11 @@ job "otel" {
         static = 4318
         to     = 4318
       }
+
+      port "zipkin" {
+        static = 9411
+        to     = 9411
+      }
     }
 
     service {
@@ -32,16 +37,18 @@ job "otel" {
       port = "otlphttp"
     }
 
+    service {
+      port = "zipkin"
+    }
+
     task "otel" {
       driver = "docker"
 
       config {
-        image = "otel/opentelemetry-collector-contrib:0.85.0"
-        ports = ["otlpgrpc", "otlphttp"]
-        entrypoint = [
-          "/otelcol-contrib",
-          "--config=local/config.yaml",
-        ]
+        image        = "otel/opentelemetry-collector-contrib:0.85.0"
+        ports        = ["zipkin"]
+        network_mode = "host"
+        args         = ["--config=local/config.yaml"]
       }
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only
@@ -53,7 +60,7 @@ job "otel" {
 
       template {
         destination = "local/config.yaml"
-        data        = <<EOH
+        data        = <<EOF
 ---
 receivers:
   otlp:
@@ -66,13 +73,6 @@ receivers:
       - /hostfs/var/nomad/alloc/*/alloc/logs/*
       - /hostfs/var/log/consul/*
     include_file_path: true
-
-  journald:
-    directory: /hostfs/var/log/journal/
-    units:
-      - consul
-      - nomad
-    priority: info
 
   hostmetrics:
     root_path: /hostfs
@@ -96,15 +96,32 @@ receivers:
       network:
       processes:
 
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'traefik'
+          scrape_interval: 60s
+          static_configs:
+            - targets: ['127.0.0.1:8080']
+
+  zipkin:
+    endpoint: 127.0.0.1:9411
+
 processors:
   batch:
     send_batch_max_size: 1000
     send_batch_size: 100
     timeout: 60s
+
   memory_limiter:
     limit_mib: 1024
     spike_limit_mib: 300
     check_interval: 5s
+
+  attributes:
+    actions:
+      - key: host
+        action: {{ env "attr.unique.hostname" }}
 
 exporters:
   otlp:
@@ -116,13 +133,17 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      processors: [batch, memory_limiter]
+      processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
     metrics:
-      receivers: [hostmetrics]
-      processors: [batch, memory_limiter]
+      receivers: [hostmetrics, prometheus]
+      processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
-EOH
+    traces:
+      receivers: [zipkin]
+      processors: [attributes, batch, memory_limiter]
+      exporters: [otlp]
+EOF
       }
     }
   }

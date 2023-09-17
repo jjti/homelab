@@ -14,6 +14,13 @@ ansible/consul:
 ansible/nomad:
 	@ansible-playbook -i ./ansible/hosts.yaml ./ansible/nomad.yaml
 
+# docker
+.PHONY: docker
+docker:
+	docker login -u jjtimmons -p '${DOCKER_PASSWORD}' docker.io
+	docker build ./docker/otel -t jjtimmons/otel:latest
+	docker push jjtimmons/otel:latest
+
 # hcl
 hcl/fix:
 	@go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*
