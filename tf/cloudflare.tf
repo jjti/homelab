@@ -81,6 +81,11 @@ resource "cloudflare_access_application" "nomad" {
   allowed_idps              = []
 }
 
+resource "cloudflare_access_service_token" "token" {
+  zone_id = var.cloudflare_zone_id
+  name    = "homelab-token"
+}
+
 resource "cloudflare_access_policy" "nomad_token" {
   application_id = cloudflare_access_application.nomad.id
   zone_id        = var.cloudflare_zone_id
@@ -91,11 +96,6 @@ resource "cloudflare_access_policy" "nomad_token" {
   include {
     service_token = [cloudflare_access_service_token.token.id]
   }
-}
-
-resource "cloudflare_access_service_token" "token" {
-  zone_id = var.cloudflare_zone_id
-  name    = "homelab-token"
 }
 
 ###
