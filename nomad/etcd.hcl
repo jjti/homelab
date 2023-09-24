@@ -44,6 +44,7 @@ job "etcd" {
 
       check {
         type     = "http"
+        port     = "metrics"
         path     = "/health"
         interval = "10s"
         timeout  = "2s"
@@ -81,7 +82,7 @@ ETCD_ADVERTISE_CLIENT_URLS       = 'http://{{ env "attr.unique.network.ip-addres
 ETCD_INITIAL_CLUSTER             = '{{ $first := true }}{{ range service "consul" }}{{ if $first }}{{ $first = false }}{{ else }},{{ end }}{{ .Node }}=http://{{ .Address }}:2380{{ end }}'
 ETCD_INITIAL_CLUSTER_STATE       = 'new'
 
-ETCD_LISTEN_METRICS_URLS         = 'http://127.0.0.1:{{ env "NOMAD_PORT_metrics" }}'
+ETCD_LISTEN_METRICS_URLS         = 'http://{{ env "attr.unique.network.ip-address" }}:{{ env "NOMAD_PORT_metrics" }}'
 EOF
       }
     }
