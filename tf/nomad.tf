@@ -66,6 +66,15 @@ resource "nomad_variable" "otel" {
   }
 }
 
+resource "nomad_variable" "seqq" {
+  path = "nomad/jobs/seqq"
+  items = {
+    minio_access_key = var.minio_access_key
+    minio_secret_key = var.minio_secret_key
+  }
+}
+
+
 resource "nomad_job" "jobs" {
   for_each = fileset(path.module, "../nomad/*")
 

@@ -21,3 +21,11 @@ variable "github_idp_client_secret" {
 variable "nr_api_key" {
   type = string
 }
+
+variable "minio_access_key" {
+  type = string
+}
+
+variable "minio_secret_key" {
+  type = string
+}

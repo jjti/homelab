@@ -13,11 +13,13 @@ job "minio" {
       mode = "host"
 
       port "api" {
-        static = "9000" # unsure how to remove this since the minio services need to find one another
+        static = 9000
+        to     = 9000
       }
 
       port "console" {
-        static = "9001"
+        static = 9001
+        to     = 9001
       }
     }
 
@@ -56,6 +58,7 @@ job "minio" {
           "server",
           "--address", ":${NOMAD_PORT_api}",
           "--console-address", ":${NOMAD_PORT_console}",
+          "--json",
         ]
       }
 
@@ -69,7 +72,7 @@ job "minio" {
         destination = ".env"
         env         = true
         data        = <<EOF
-MINIO_VOLUMES       = '{{ range service "consul" }}http://{{ .Address }}:9000/mnt/sata {{ end }}'
+MINIO_VOLUMES       = '{{ range service "consul" }}http://{{ .Address }}:{{ env "NOMAD_PORT_api" }}/mnt/sata {{ end }}'
 MINIO_ROOT_USER     = admin
 MINIO_ROOT_PASSWORD = {{ with nomadVar "nomad/jobs/minio" }}{{ .minio_password }}{{ end }}
 EOF
