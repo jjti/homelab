@@ -127,6 +127,12 @@
             group: root
             mode: "0755"
             read_only: false
+          - name: etcd
+            path: /usr/local/var/lib/etcd
+            owner: root
+            group: root
+            mode: "0755"
+            read_only: false
           - name: root
             path: /
             owner: root

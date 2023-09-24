@@ -21,7 +21,6 @@ job "traefik" {
 
       tags = [
         "traefik.enable=false",
-        "log-${attr.unique.hostname}"
       ]
     }
 

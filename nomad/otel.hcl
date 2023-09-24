@@ -103,6 +103,10 @@ receivers:
           scrape_interval: 60s
           static_configs:
             - targets: ['127.0.0.1:8080']
+        - job_name: 'etcd'
+          scrape_interval: 60s
+          static_configs:
+            - targets: ['127.0.0.1:2381']
 
   zipkin:
     endpoint: 127.0.0.1:9411

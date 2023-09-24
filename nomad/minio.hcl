@@ -31,8 +31,6 @@ job "minio" {
         interval = "10s"
         timeout  = "2s"
       }
-
-      tags = ["log-${attr.unique.hostname}"]
     }
 
     service {
