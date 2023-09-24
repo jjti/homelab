@@ -55,7 +55,7 @@ job "etcd" {
       driver = "docker"
 
       config {
-        image        = "quay.io/coreos/etcd:v3.4.27"
+        image        = "quay.io/coreos/etcd:v3.5.9-amd64"
         ports        = ["peer", "client", "metrics"]
         network_mode = "host"
       }
@@ -88,6 +88,10 @@ ETCD_INITIAL_CLUSTER             = '{{ $first := true }}{{ range service "consul
 ETCD_INITIAL_CLUSTER_STATE       = 'new'
 
 ETCD_LISTEN_METRICS_URLS         = 'http://{{ env "attr.unique.network.ip-address" }}:{{ env "NOMAD_PORT_metrics" }},http://127.0.0.1:{{ env "NOMAD_PORT_metrics" }}'
+
+ETCD_EXPERIMENTAL_ENABLE_DISTRIBUTED_TRACING      = 'true'
+ETCD_EXPERIMENTAL_DISTRIBUTED_TRACING_ADDRESS     = 'http://{{ env "attr.unique.network.ip-address" }}:4317'
+ETCD_EXPERIMENTAL_DISTRIBUTED_TRACING_INSTANCE_ID = '{{ env "attr.unique.hostname" }}'
 EOF
       }
     }

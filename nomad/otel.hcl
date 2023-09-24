@@ -44,6 +44,10 @@ job "otel" {
     task "otel" {
       driver = "docker"
 
+      resources {
+        cpu = 500
+      }
+
       config {
         image        = "otel/opentelemetry-collector-contrib:0.85.0"
         ports        = ["zipkin"]
@@ -141,11 +145,11 @@ service:
       processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
     metrics:
-      receivers: [hostmetrics, prometheus]
+      receivers: [hostmetrics, otlp, prometheus]
       processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
     traces:
-      receivers: [zipkin]
+      receivers: [otlp, zipkin]
       processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
 EOF

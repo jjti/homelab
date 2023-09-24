@@ -62,6 +62,11 @@ job "minio" {
         ]
       }
 
+      resources {
+        cpu    = 500
+        memory = 3000
+      }
+
       volume_mount {
         volume           = "minio"
         destination      = "/mnt/sata"
