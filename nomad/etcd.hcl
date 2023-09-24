@@ -60,6 +60,11 @@ job "etcd" {
         network_mode = "host"
       }
 
+      resources {
+        cpu    = 1000
+        memory = 500
+      }
+
       volume_mount {
         volume           = "etcd"
         destination      = "/usr/local/var/lib/etcd"
@@ -82,7 +87,7 @@ ETCD_ADVERTISE_CLIENT_URLS       = 'http://{{ env "attr.unique.network.ip-addres
 ETCD_INITIAL_CLUSTER             = '{{ $first := true }}{{ range service "consul" }}{{ if $first }}{{ $first = false }}{{ else }},{{ end }}{{ .Node }}=http://{{ .Address }}:2380{{ end }}'
 ETCD_INITIAL_CLUSTER_STATE       = 'new'
 
-ETCD_LISTEN_METRICS_URLS         = 'http://{{ env "attr.unique.network.ip-address" }}:{{ env "NOMAD_PORT_metrics" }}'
+ETCD_LISTEN_METRICS_URLS         = 'http://{{ env "attr.unique.network.ip-address" }}:{{ env "NOMAD_PORT_metrics" }},http://127.0.0.1:{{ env "NOMAD_PORT_metrics" }}'
 EOF
       }
     }
