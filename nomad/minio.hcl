@@ -2,6 +2,10 @@ job "minio" {
   datacenters = ["dc1"]
   type        = "system"
 
+  update {
+    max_parallel = 0
+  }
+
   group "minio" {
     volume "minio" {
       type      = "host"
@@ -63,8 +67,8 @@ job "minio" {
       }
 
       resources {
-        cpu    = 500
-        memory = 3000
+        cpu    = 1000
+        memory = 8000
       }
 
       volume_mount {
