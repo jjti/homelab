@@ -133,6 +133,12 @@
             group: root
             mode: "0755"
             read_only: false
+          - name: seqq
+            path: /var/lib/seqq/data
+            owner: root
+            group: root
+            mode: "0755"
+            read_only: false
           - name: root
             path: /
             owner: root

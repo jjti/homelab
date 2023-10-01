@@ -68,7 +68,7 @@ job "minio" {
 
       resources {
         cpu    = 1000
-        memory = 8000
+        memory = 6000
       }
 
       volume_mount {
