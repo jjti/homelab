@@ -107,10 +107,6 @@ receivers:
           scrape_interval: 60s
           static_configs:
             - targets: ['127.0.0.1:8080']
-        - job_name: 'etcd'
-          scrape_interval: 60s
-          static_configs:
-            - targets: ['127.0.0.1:2381']
 
   zipkin:
     endpoint: 127.0.0.1:9411
@@ -132,6 +128,17 @@ processors:
         value: {{ env "attr.unique.hostname" }} 
         action: insert
 
+  tail_sampling:
+    num_traces: 1000
+    policies:
+      - name: errors
+        type: status_code
+        status_code: {status_codes: [ERROR, UNSET]}
+      - name: sample
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 5
+
 exporters:
   otlp:
     endpoint: https://otlp.nr-data.net:4318
@@ -150,7 +157,7 @@ service:
       exporters: [otlp]
     traces:
       receivers: [otlp, zipkin]
-      processors: [attributes, batch, memory_limiter]
+      processors: [attributes, batch, memory_limiter, tail_sampling]
       exporters: [otlp]
 EOF
       }
