@@ -81,9 +81,9 @@ job "minio" {
         destination = ".env"
         env         = true
         data        = <<EOF
-MINIO_VOLUMES       = '{{ range service "consul" }}http://{{ .Address }}:{{ env "NOMAD_PORT_api" }}/mnt/sata {{ end }}'
-MINIO_ROOT_USER     = admin
 MINIO_ROOT_PASSWORD = {{ with nomadVar "nomad/jobs/minio" }}{{ .minio_password }}{{ end }}
+MINIO_ROOT_USER     = admin
+MINIO_VOLUMES       = '{{ range service "consul" }}http://{{ .Address }}:{{ env "NOMAD_PORT_api" }}/mnt/sata {{ end }}'
 EOF
       }
     }

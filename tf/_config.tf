@@ -2,12 +2,12 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.4.0"
+      version = "5.31.0"
     }
 
     consul = {
       source  = "hashicorp/consul"
-      version = "2.18.0"
+      version = "2.20.0"
     }
 
     cloudflare = {
@@ -17,7 +17,7 @@ terraform {
 
     nomad = {
       source  = "hashicorp/nomad"
-      version = "2.0.0"
+      version = "2.1.0"
     }
 
     random = {
