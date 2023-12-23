@@ -55,7 +55,7 @@ job "minio" {
       driver = "docker"
 
       config {
-        image        = "minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.60799aeb0"
+        image        = "minio/minio:RELEASE.2023-12-23T07-19-11Z"
         ports        = ["api", "console"]
         network_mode = "host"
         args = [

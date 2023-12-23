@@ -76,7 +76,16 @@ receivers:
     include:
       - /hostfs/var/nomad/alloc/*/alloc/logs/*
       - /hostfs/var/log/consul/*
+    exclude:
+      - /hostfs/var/nomad/alloc/*/alloc/logs/seqq*
     include_file_path: true
+
+  filelog/seqq:
+    include:
+      - /hostfs/var/nomad/alloc/*/alloc/logs/seqq*
+    include_file_path: true
+    attributes:
+      entity.name: seqq
 
   hostmetrics:
     root_path: /hostfs
@@ -124,7 +133,7 @@ processors:
 
   attributes:
     actions:
-      - key: host
+      - key: hostname
         value: {{ env "attr.unique.hostname" }} 
         action: insert
 
@@ -148,7 +157,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [filelog, filelog/seqq]
       processors: [attributes, batch, memory_limiter]
       exporters: [otlp]
     metrics:
