@@ -8,11 +8,15 @@ ssh:
 ansible:
 	@ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
 
+# this seems really weird
+ansible/upgrade-roles:
+	ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
+
 ansible/consul:
-	@ansible-playbook -i ./ansible/hosts.yaml ./ansible/consul.yaml
+	ansible-playbook -i ./ansible/hosts.yaml ./ansible/consul.yaml
 
 ansible/nomad:
-	@ansible-playbook -i ./ansible/hosts.yaml ./ansible/nomad.yaml
+	ansible-playbook -i ./ansible/hosts.yaml ./ansible/nomad.yaml
 
 # docker
 .PHONY: docker

@@ -75,7 +75,7 @@
   roles:
     - role: ansible-nomad
       vars:
-        nomad_version: 1.7.2
+        nomad_version: 1.7.3
         nomad_group_name: ser
         nomad_node_role: both
         nomad_raft_protocol: 3
@@ -95,7 +95,7 @@
         nomad_consul_key_file: /etc/consul/ssl/dc1-server-consul-0-key.pem
         nomad_consul_servers_service_name: nomad
         nomad_consul_clients_service_name: nomad-client
-        nomad_consul_tags: {}
+        nomad_consul_tags: ["nomad"]
 
         nomad_acl_enabled: true # bootstrap nomad after this
 

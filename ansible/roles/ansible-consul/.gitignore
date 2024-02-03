@@ -4,7 +4,11 @@
 *.retry
 examples/hosts
 files/consul
-files/*
+files/*.zip
+files/ca.crt
+files/server.crt
+files/server.key
+files/*_SHA256SUMS
 tests/test_results.json
 *.pyc
 molecule/*/cache/

@@ -4,7 +4,7 @@
 *.retry
 examples/hashistack
 examples/hosts
-files/*
+files/*.zip
 files/nomad
 nomad_*_SHA256SUMS
 *.swp
