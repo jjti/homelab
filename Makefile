@@ -6,17 +6,17 @@ ssh:
 # ansible
 .PHONY: ansible
 ansible:
-	@ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
+	ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
 
 # this seems really weird
 ansible/upgrade-roles:
 	ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
 
 ansible/consul:
-	ansible-playbook -i ./ansible/hosts.yaml ./ansible/consul.yaml
+	ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/consul.yaml
 
 ansible/nomad:
-	ansible-playbook -i ./ansible/hosts.yaml ./ansible/nomad.yaml
+	ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/nomad.yaml
 
 # docker
 .PHONY: docker
@@ -27,7 +27,7 @@ docker:
 
 # hcl
 hcl/fix:
-	@go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*
+	go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*
 
 # tf
 .PHONY: tf

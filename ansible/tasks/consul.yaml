@@ -2,7 +2,7 @@
 - hosts: ser
   become: true
   roles:
-    - role: ansible-consul
+    - role: ../roles/ansible-consul
       vars:
         auto_encrypt:
           enabled: true

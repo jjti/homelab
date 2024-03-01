@@ -73,9 +73,9 @@
       when: not client_id_file.stat.exists
 
   roles:
-    - role: ansible-nomad
+    - role: ../roles/ansible-nomad
       vars:
-        nomad_version: 1.7.3
+        nomad_version: 1.7.5
         nomad_group_name: ser
         nomad_node_role: both
         nomad_raft_protocol: 3
@@ -116,22 +116,16 @@
         nomad_autopilot: true
 
         nomad_host_volumes:
+          - name: root
+            path: /
+            owner: root
+            group: bin
+            mode: "0755"
+            read_only: true
           - name: sata
             path: /mnt/sata
             owner: minio-user
             group: minio-user
-            mode: "0755"
-            read_only: false
-          - name: grafana
-            path: /usr/local/var/lib/grafana
-            owner: root
-            group: root
-            mode: "0755"
-            read_only: false
-          - name: etcd
-            path: /usr/local/var/lib/etcd
-            owner: root
-            group: root
             mode: "0755"
             read_only: false
           - name: seqq
@@ -140,18 +134,36 @@
             group: root
             mode: "0755"
             read_only: false
-          - name: arr
-            path: /usr/local/var/media
+          - name: arr-config
+            path: /usr/local/var/config
             owner: root
             group: root
             mode: "0775"
             read_only: false
-          - name: root
-            path: /
+          - name: arr-cache
+            path: /usr/local/var/cache
             owner: root
-            group: bin
-            mode: "0755"
-            read_only: true
+            group: root
+            mode: "0775"
+            read_only: false
+          - name: arr-tv
+            path: /usr/local/var/tv
+            owner: root
+            group: root
+            mode: "0775"
+            read_only: false
+          - name: arr-movies
+            path: /usr/local/var/movies
+            owner: root
+            group: root
+            mode: "0775"
+            read_only: false
+          - name: arr-downloads
+            path: /usr/local/var/downloads
+            owner: root
+            group: root
+            mode: "0775"
+            read_only: false
 
         nomad_config_custom:
           ui:

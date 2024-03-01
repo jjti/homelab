@@ -1,7 +1,0 @@
----
-- hosts: ser
-  become: true
-  roles:
-    - role: ansible-tailscale
-      vars:
-        tailscale_authkey: "{{ lookup('community.general.onepassword', 'homelab', field='tailscaleauthkey', vault='Private') }}"
