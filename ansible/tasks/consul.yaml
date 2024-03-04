@@ -1,6 +1,36 @@
 ---
 - hosts: ser
   become: true
+  
+  pre_tasks:
+    - name: Check if the file already exists
+      stat:
+        path: /etc/systemd/resolved.conf.d/consul.conf
+      register: conf_file
+
+    # https://developer.hashicorp.com/consul/tutorials/networking/dns-forwarding#systemd-resolved-setup
+    - name: Create the destination directory if it doesn't exist
+      file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+      when: not conf_file.stat.exists
+
+    - name: Config systemd-resolved for consul
+      copy:
+        content: |
+          [Resolve]
+          DNS=127.0.0.1:8600
+          DNSSEC=false
+          Domains=~consul
+        dest: /etc/systemd/resolved.conf.d/consul.conf
+
+    - name: Restart systemd-resolved
+      ansible.builtin.systemd:
+        state: restarted
+        enabled: true
+        daemon_reload: true
+        name: systemd-resolved
+
   roles:
     - role: ../roles/ansible-consul
       vars:

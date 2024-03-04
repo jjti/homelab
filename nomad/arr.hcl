@@ -9,7 +9,7 @@ job "arr" {
   group "jellyfin" {
     volume "config" {
       type      = "host"
-      source    = "arr-config"
+      source    = "arr-config-jellyfin"
       read_only = false
     }
 
@@ -32,6 +32,8 @@ job "arr" {
     }
 
     network {
+      mode = "bridge"
+
       port "http" {
         static = 8096
         to     = 8096
@@ -39,16 +41,43 @@ job "arr" {
     }
 
     service {
+      name = "jellyfin"
       port = "http"
+
+      connect {
+        sidecar_service {
+          proxy {
+            upstreams {
+              destination_name = "radarr"
+              local_bind_port  = 8080
+            }
+
+            upstreams {
+              destination_name = "sonarr"
+              local_bind_port  = 8081
+            }
+          }
+        }
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.jellyfin.rule=PathPrefix(`/stream`)",
+      ]
     }
 
     task "jellyfin" {
       driver = "docker"
 
+      resources {
+        cpu    = 600
+        memory = 1500
+      }
+
       config {
-        image        = "jellyfin/jellyfin"
-        network_mode = "host"
-        ports        = ["http"]
+        image = "lscr.io/linuxserver/jellyfin:latest"
+        ports = ["http"]
       }
 
       volume_mount {
@@ -81,7 +110,8 @@ job "arr" {
         data        = <<EOF
 PUID=1000
 PGID=1000
-TZ=Etc/UTC
+TZ= Etc/UTC
+JELLYFIN_PublishedServerUrl=192.168.0.139
 EOF
       }
     }
@@ -90,7 +120,7 @@ EOF
   group "sonarr" {
     volume "config" {
       type      = "host"
-      source    = "arr-config"
+      source    = "arr-config-sonarr"
       read_only = false
     }
 
@@ -107,6 +137,8 @@ EOF
     }
 
     network {
+      mode = "bridge"
+
       port "http" {
         static = 8989
         to     = 8989
@@ -114,16 +146,26 @@ EOF
     }
 
     service {
+      name = "sonarr"
       port = "http"
+
+      connect {
+        sidecar_service {}
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.sonarr.rule=PathPrefix(`/sonarr`)",
+      ]
     }
 
     task "sonarr" {
       driver = "docker"
 
       config {
-        image        = "lscr.io/linuxserver/sonarr:latest"
-        network_mode = "host"
-        ports        = ["http"]
+        image = "lscr.io/linuxserver/sonarr:latest"
+        ports = ["http"]
       }
 
       volume_mount {
@@ -159,7 +201,7 @@ EOF
   group "radarr" {
     volume "config" {
       type      = "host"
-      source    = "arr-config"
+      source    = "arr-config-radarr"
       read_only = false
     }
 
@@ -176,23 +218,37 @@ EOF
     }
 
     network {
+      mode = "bridge"
+
       port "http" {
         static = 8990
-        to     = 8989
+        to     = 7878
       }
     }
 
     service {
+      name = "radarr"
       port = "http"
+
+      connect {
+        sidecar_service {
+
+        }
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.radarr.rule=PathPrefix(`/radarr`)",
+      ]
     }
 
     task "radarr" {
       driver = "docker"
 
       config {
-        image        = "lscr.io/linuxserver/radarr:latest"
-        network_mode = "host"
-        ports        = ["http"]
+        image = "lscr.io/linuxserver/radarr:latest"
+        ports = ["http"]
       }
 
       volume_mount {
@@ -225,31 +281,62 @@ EOF
     }
   }
 
-  group "prowlarr" {
+  group "sabnzbd" {
     volume "config" {
       type      = "host"
-      source    = "arr-config"
+      source    = "arr-config-sabnzbd"
+      read_only = false
+    }
+
+    volume "downloads" {
+      type      = "host"
+      source    = "arr-downloads"
       read_only = false
     }
 
     network {
+      mode = "bridge"
+
+      port "ui" {
+        static = 6882
+        to     = 8080
+      }
+
       port "http" {
-        static = 8991
-        to     = 9696
+        static = 6881
+        to     = 6881
       }
     }
 
     service {
-      port = "http"
+      name = "sabnzbd-ui"
+      port = "ui"
+
+      connect {
+        sidecar_service {}
+      }
     }
 
-    task "prowlarr" {
+    service {
+      name = "sabnzbd-http"
+      port = "http"
+
+      connect {
+        sidecar_service {}
+      }
+    }
+
+    task "sabnzbd" {
       driver = "docker"
 
+      resources {
+        cpu    = 1000
+        memory = 2000
+      }
+
       config {
-        image        = "lscr.io/linuxserver/prowlarr:latest"
-        network_mode = "host"
-        ports        = ["http"]
+        image = "lscr.io/linuxserver/sabnzbd:latest"
+        ports = ["ui", "http"]
       }
 
       volume_mount {
@@ -258,12 +345,18 @@ EOF
         propagation_mode = "private"
       }
 
+      volume_mount {
+        volume           = "downloads"
+        destination      = "/downloads"
+        propagation_mode = "private"
+      }
+
       template {
         destination = ".env"
         env         = true
         data        = <<EOF
+GUID=1000
 PUID=1000
-PGID=1000
 TZ=Etc/UTC
 EOF
       }

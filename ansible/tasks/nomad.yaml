@@ -5,12 +5,6 @@
   # Download CNI plugins
   # https://developer.hashicorp.com/nomad/docs/install#post-installation-steps
   pre_tasks:
-    # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/
-    - name: Create the grafana dashboard directory (mount)
-      file:
-        path: /usr/local/var/lib/grafana
-        state: directory
-
     - name: Check if files already exist in /opt/cni/bin
       stat:
         path: /opt/cni/bin
@@ -115,6 +109,14 @@
         nomad_telemetry_publish_allocation_metrics: true
         nomad_autopilot: true
 
+        nomad_plugins:
+          # https://developer.hashicorp.com/nomad/docs/drivers/docker
+          docker:
+            config:
+              allow_caps: ["net_admin", "audit_write", "chown", "dac_override", "fowner", "fsetid", "kill", "mknod",
+ "net_bind_service", "setfcap", "setgid", "setpcap", "setuid", "sys_chroot"]
+              allow_privileged: true
+
         nomad_host_volumes:
           - name: root
             path: /
@@ -134,34 +136,58 @@
             group: root
             mode: "0755"
             read_only: false
-          - name: arr-config
-            path: /usr/local/var/config
-            owner: root
-            group: root
+          - name: arr-config-jellyfin
+            path: /usr/local/var/config/jellyfin
+            owner: josh
+            group: josh
+            mode: "0775"
+            read_only: false
+          - name: arr-config-radarr
+            path: /usr/local/var/config/radarr
+            owner: josh
+            group: josh
+            mode: "0775"
+            read_only: false
+          - name: arr-config-sonarr
+            path: /usr/local/var/config/sonarr
+            owner: josh
+            group: josh
+            mode: "0775"
+            read_only: false
+          - name: arr-config-prowlarr
+            path: /usr/local/var/config/prowlarr
+            owner: josh
+            group: josh
+            mode: "0775"
+            read_only: false
+          - name: arr-config-sabnzbd
+            path: /usr/local/var/config/sabnzbd
+            owner: josh
+            group: josh
             mode: "0775"
             read_only: false
           - name: arr-cache
             path: /usr/local/var/cache
-            owner: root
-            group: root
+            owner: josh
+            group: josh
             mode: "0775"
             read_only: false
           - name: arr-tv
             path: /usr/local/var/tv
-            owner: root
-            group: root
+            owner: josh
+            group: josh
             mode: "0775"
             read_only: false
           - name: arr-movies
             path: /usr/local/var/movies
-            owner: root
-            group: root
+            owner: josh
+            group: josh
             mode: "0775"
             read_only: false
           - name: arr-downloads
             path: /usr/local/var/downloads
-            owner: root
-            group: root
+            owner: josh
+            group: josh
             mode: "0775"
             read_only: false
 

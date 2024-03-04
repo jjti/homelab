@@ -3,6 +3,7 @@
 locals {
   nomad_hostname = "nomad.${var.cloudflare_domain}"
   ssh_hostname   = "ssh.${var.cloudflare_domain}"
+  stream_hostname = "stream.${var.cloudflare_domain}"
 }
 
 resource "cloudflare_record" "record" {
@@ -37,6 +38,14 @@ resource "cloudflare_record" "record_ssh" {
   proxied = true
 }
 
+resource "cloudflare_record" "record_stream" {
+  name    = "stream"
+  zone_id = var.cloudflare_zone_id
+  value   = cloudflare_tunnel.auto_tunnel.cname
+  type    = "CNAME"
+  proxied = true
+}
+
 resource "random_id" "tunnel_secret" {
   byte_length = 35
 }
@@ -59,6 +68,12 @@ resource "cloudflare_tunnel_config" "auto_tunnel" {
     ingress_rule {
       hostname = local.ssh_hostname
       service  = "ssh://localhost:22"
+    }
+
+    ingress_rule {
+      hostname = local.stream_hostname
+      path = "/stream"
+      service = "http://localhost:80"
     }
 
     ingress_rule {
@@ -137,5 +152,40 @@ resource "cloudflare_access_identity_provider" "github" {
   config {
     client_id     = var.github_idp_client_id
     client_secret = var.github_idp_client_secret
+  }
+}
+
+###
+# Stream
+###
+
+resource "cloudflare_access_application" "stream" {
+  zone_id                   = var.cloudflare_zone_id
+  name                      = "homelab stream access"
+  domain                    = local.stream_hostname
+  type                      = "self_hosted"
+  session_duration          = "2h"
+  auto_redirect_to_identity = false
+  allowed_idps              = [data.cloudflare_access_identity_provider.google.id]
+}
+
+data "cloudflare_access_identity_provider" "google" {
+  zone_id = var.cloudflare_zone_id
+  name = "Google"
+}
+
+resource "cloudflare_access_policy" "stream_google" {
+  application_id = cloudflare_access_application.stream.id
+  zone_id        = var.cloudflare_zone_id
+  name           = "homelab stream access policy"
+  precedence     = "1"
+  decision       = "allow"
+
+  include {
+    gsuite {
+      identity_provider_id = data.cloudflare_access_identity_provider.google.id
+    }
+
+    email = ["joshua.timmons1@gmail.com"]
   }
 }
