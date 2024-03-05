@@ -37,3 +37,7 @@ variable "openvpn_user" {
 variable "openvpn_password" {
   type = string
 }
+
+variable "streaming_emails" {
+  type = list(string)
+}

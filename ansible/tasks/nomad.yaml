@@ -142,6 +142,12 @@
             group: josh
             mode: "0775"
             read_only: false
+          - name: arr-config-jellyseer
+            path: /usr/local/var/config/jellyseer
+            owner: josh
+            group: josh
+            mode: "0775"
+            read_only: false
           - name: arr-config-radarr
             path: /usr/local/var/config/radarr
             owner: josh

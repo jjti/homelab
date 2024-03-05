@@ -45,19 +45,7 @@ job "arr" {
       port = "http"
 
       connect {
-        sidecar_service {
-          proxy {
-            upstreams {
-              destination_name = "radarr"
-              local_bind_port  = 8080
-            }
-
-            upstreams {
-              destination_name = "sonarr"
-              local_bind_port  = 8081
-            }
-          }
-        }
+        sidecar_service {}
       }
 
       tags = [
@@ -71,8 +59,8 @@ job "arr" {
       driver = "docker"
 
       resources {
-        cpu    = 600
-        memory = 1500
+        cpu    = 2000
+        memory = 8000
       }
 
       config {
@@ -112,6 +100,63 @@ PUID=1000
 PGID=1000
 TZ= Etc/UTC
 JELLYFIN_PublishedServerUrl=192.168.0.139
+EOF
+      }
+    }
+  }
+
+  group "jellyseer" {
+    volume "config" {
+      type      = "host"
+      source    = "arr-config-jellyseer"
+      read_only = false
+    }
+
+    network {
+      mode = "bridge"
+
+      port "http" {
+        static = 5055
+        to     = 5055
+      }
+    }
+
+    service {
+      name = "jellyseer"
+      port = "http"
+
+      connect {
+        sidecar_service {}
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.jellyseer.rule=PathPrefix(`/download`)",
+      ]
+    }
+
+    task "jellyseer" {
+      driver = "docker"
+
+      config {
+        image = "fallenbagel/jellyseerr:latest"
+        ports = ["http"]
+      }
+
+      volume_mount {
+        volume           = "config"
+        destination      = "/app/config"
+        propagation_mode = "private"
+      }
+
+      template {
+        destination = ".env"
+        env         = true
+        data        = <<EOF
+PUID=1000
+PGID=1000
+TZ= Etc/UTC
 EOF
       }
     }
@@ -221,7 +266,7 @@ EOF
       mode = "bridge"
 
       port "http" {
-        static = 8990
+        static = 7878
         to     = 7878
       }
     }
@@ -231,9 +276,7 @@ EOF
       port = "http"
 
       connect {
-        sidecar_service {
-
-        }
+        sidecar_service {}
       }
 
       tags = [
