@@ -7,3 +7,4 @@
   name: ansible-nomad
   scm: git
   version: master
+- src: https://github.com/artis3n/ansible-role-tailscale.git

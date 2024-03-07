@@ -1,4 +1,5 @@
 ---
+- import_playbook: ./tasks/tailscaled.yaml
 - import_playbook: ./tasks/sudoless.yaml
 - import_playbook: ./tasks/pihole.yaml
 - import_playbook: ./tasks/docker.yaml

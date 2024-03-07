@@ -60,12 +60,19 @@ job "arr" {
 
       resources {
         cpu    = 2000
-        memory = 8000
+        memory = 10000
       }
 
       config {
-        image = "lscr.io/linuxserver/jellyfin:latest"
-        ports = ["http"]
+        image     = "lscr.io/linuxserver/jellyfin:latest"
+        ports     = ["http"]
+        group_add = ["109", "44"]
+        devices = [
+          {
+            host_path      = "/dev/dri/renderD128"
+            container_path = "/dev/dri/renderD128"
+          }
+        ]
       }
 
       volume_mount {
@@ -100,6 +107,7 @@ PUID=1000
 PGID=1000
 TZ= Etc/UTC
 JELLYFIN_PublishedServerUrl=192.168.0.139
+ROC_ENABLE_PRE_VEGA=1
 EOF
       }
     }
