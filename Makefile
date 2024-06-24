@@ -1,3 +1,7 @@
+define OP_RUN
+  op run --env-file secrets.env --
+endef
+
 # ssh
 .PHONY: ssh
 ssh:
@@ -6,24 +10,17 @@ ssh:
 # ansible
 .PHONY: ansible
 ansible:
-	ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
 
 # this seems really weird
 ansible/upgrade-roles:
-	ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
+	$(OP_RUN) ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
 
 ansible/consul:
-	ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/consul.yaml
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/consul.yaml
 
 ansible/nomad:
-	ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/nomad.yaml
-
-# docker
-.PHONY: docker
-docker:
-	docker login -u jjtimmons -p '${DOCKER_PASSWORD}' docker.io
-	docker build ./docker/otel -t jjtimmons/otel:latest
-	docker push jjtimmons/otel:latest
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/nomad.yaml
 
 # hcl
 hcl/fix:
@@ -32,10 +29,10 @@ hcl/fix:
 # tf
 .PHONY: tf
 tf: tf/fix hcl/fix
-	cd terraform && terraform apply -auto-approve -parallelism=30
+	$(OP_RUN) terraform -chdir=./terraform apply -auto-approve -parallelism=30
 
 tf/init:
-	cd terraform && terraform init
+	$(OP_RUN) terraform -chdir=./terraform init
 
 tf/fix:
 	terraform fmt -recursive .
