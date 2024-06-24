@@ -6,6 +6,11 @@ job "arr" {
     value     = "ser5-3"
   }
 
+  // force reloading to pick up new versions of images.
+  meta {
+    uuid = uuidv4()
+  }
+
   group "jellyfin" {
     volume "config" {
       type      = "host"

@@ -77,7 +77,7 @@ resource "nomad_variable" "seqq" {
 resource "nomad_variable" "openvpn_password" {
   path = "nomad/jobs/arr"
   items = {
-    openvpn_user = var.openvpn_user
+    openvpn_user     = var.openvpn_user
     openvpn_password = var.openvpn_password
   }
 }

@@ -32,10 +32,10 @@ hcl/fix:
 # tf
 .PHONY: tf
 tf: tf/fix hcl/fix
-	@cd terraform && terraform apply -auto-approve -parallelism=30
+	cd terraform && terraform apply -auto-approve -parallelism=30
 
 tf/init:
-	@cd terraform && terraform init
+	cd terraform && terraform init
 
 tf/fix:
 	terraform fmt -recursive .

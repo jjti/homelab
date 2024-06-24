@@ -1,8 +1,8 @@
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/terraform/
 
 locals {
-  nomad_hostname = "nomad.${var.cloudflare_domain}"
-  ssh_hostname   = "ssh.${var.cloudflare_domain}"
+  nomad_hostname    = "nomad.${var.cloudflare_domain}"
+  ssh_hostname      = "ssh.${var.cloudflare_domain}"
   download_hostname = "download.${var.cloudflare_domain}"
 }
 
@@ -72,7 +72,7 @@ resource "cloudflare_tunnel_config" "auto_tunnel" {
 
     ingress_rule {
       hostname = local.download_hostname
-      service = "http://192.168.0.139:5055" // jellyseer
+      service  = "http://192.168.0.139:5055" // jellyseer
     }
 
     ingress_rule {
@@ -157,6 +157,11 @@ resource "cloudflare_access_identity_provider" "github" {
 ###
 # Stream
 ###
+
+data "cloudflare_access_identity_provider" "google" {
+  zone_id = var.cloudflare_zone_id
+  name    = "Google"
+}
 
 resource "cloudflare_access_application" "download" {
   zone_id                   = var.cloudflare_zone_id
