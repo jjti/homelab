@@ -69,7 +69,7 @@
   roles:
     - role: ../roles/ansible-nomad
       vars:
-        nomad_version: 1.7.5
+        nomad_version: 1.7.7
         nomad_group_name: ser
         nomad_node_role: both
         nomad_raft_protocol: 3
@@ -160,8 +160,8 @@
             group: josh
             mode: "0775"
             read_only: false
-          - name: arr-config-prowlarr
-            path: /usr/local/var/config/prowlarr
+          - name: arr-config-bazarr
+            path: /usr/local/var/config/bazarr
             owner: josh
             group: josh
             mode: "0775"

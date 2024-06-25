@@ -12,6 +12,9 @@ ssh:
 ansible:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
 
+ansible/deps:
+	ansible-galaxy collection install ansible.utils
+
 # this seems really weird
 ansible/upgrade-roles:
 	$(OP_RUN) ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles

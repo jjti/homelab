@@ -337,6 +337,100 @@ EOF
     }
   }
 
+  group "bazarr" {
+    volume "config" {
+      type      = "host"
+      source    = "arr-config-bazarr"
+      read_only = false
+    }
+
+    volume "data" {
+      type      = "host"
+      source    = "arr-downloads"
+      read_only = false
+    }
+
+    volume "tv" {
+      type      = "host"
+      source    = "arr-tv"
+      read_only = false
+    }
+
+    volume "movies" {
+      type      = "host"
+      source    = "arr-movies"
+      read_only = false
+    }
+
+    network {
+      mode = "bridge"
+
+      port "http" {
+        static = 6767
+        to     = 6767
+      }
+    }
+
+    service {
+      name = "bazarr"
+      port = "http"
+
+      connect {
+        sidecar_service {}
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.bazarr.rule=PathPrefix(`/bazarr`)",
+      ]
+    }
+
+    task "bazarr" {
+      driver = "docker"
+
+      config {
+        image = "hotio/bazarr:latest"
+        ports = ["http"]
+      }
+
+      volume_mount {
+        volume           = "config"
+        destination      = "/config"
+        propagation_mode = "private"
+      }
+
+      volume_mount {
+        volume           = "data"
+        destination      = "/data"
+        propagation_mode = "private"
+      }
+
+      volume_mount {
+        volume           = "tv"
+        destination      = "/tv"
+        propagation_mode = "private"
+      }
+
+      volume_mount {
+        volume           = "movies"
+        destination      = "/movies"
+        propagation_mode = "private"
+      }
+
+      template {
+        destination = ".env"
+        env         = true
+        data        = <<EOF
+PUID=1000
+PGID=1000
+TZ=Etc/UTC
+UMASK=002
+EOF
+      }
+    }
+  }
+
   group "sabnzbd" {
     volume "config" {
       type      = "host"
