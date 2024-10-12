@@ -69,7 +69,7 @@
   roles:
     - role: ../roles/ansible-nomad
       vars:
-        nomad_version: 1.7.7
+        nomad_version: 1.9.0
         nomad_group_name: ser
         nomad_node_role: both
         nomad_raft_protocol: 3
@@ -81,12 +81,12 @@
         nomad_use_consul: true
         nomad_network_interface: enp1s0
 
-        nomad_consul_address: localhost:8501
-        nomad_consul_ssl: true
+        nomad_consul_address: localhost:8500
+        nomad_consul_ssl: false
         nomad_consul_token: "{{ lookup('community.general.onepassword', 'homelab', field='consulmgmttoken', vault='Private') }}"
-        nomad_consul_ca_file: /etc/consul/ssl/consul-agent-ca.pem
-        nomad_consul_cert_file: /etc/consul/ssl/dc1-server-consul-0.pem
-        nomad_consul_key_file: /etc/consul/ssl/dc1-server-consul-0-key.pem
+        # nomad_consul_ca_file: /etc/consul/ssl/consul-agent-ca.pem
+        # nomad_consul_cert_file: /etc/consul/ssl/dc1-server-consul-0.pem
+        # nomad_consul_key_file: /etc/consul/ssl/dc1-server-consul-0-key.pem
         nomad_consul_servers_service_name: nomad
         nomad_consul_clients_service_name: nomad-client
         nomad_consul_tags: ["nomad"]

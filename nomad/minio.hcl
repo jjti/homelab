@@ -2,6 +2,12 @@ job "minio" {
   datacenters = ["dc1"]
   type        = "system"
 
+  constraint {
+    attribute = "${node.unique.hostname}"
+    operator  = "!="
+    value     = "ser5-3"
+  }
+
   update {
     max_parallel = 0
   }

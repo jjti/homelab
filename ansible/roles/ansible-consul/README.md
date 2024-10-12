@@ -1,6 +1,6 @@
 # Consul
 
-![Molecule](https://github.com/ansible-collections/ansible-consul/workflows/Molecule/badge.svg?branch=master&event=pull_request)
+[![Molecule](https://github.com/ansible-collections/ansible-consul/workflows/Molecule/badge.svg?branch=master)](https://github.com/ansible-collections/ansible-consul/actions?query=branch%3Amaster)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/ansible-collections/ansible-consul.svg)](http://isitmaintained.com/project/ansible-collections/ansible-consul "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/ansible-collections/ansible-consul.svg)](http://isitmaintained.com/project/ansible-collections/ansible-consul "Percentage of issues still open")
 
@@ -839,8 +839,8 @@ _Consul Enterprise Only (requires that CONSUL_ENTERPRISE is set to true)_
  - Restarts consul node one by one to avoid service interruption on existing cluster (Unix platforms only).
  - Default value: *false*
 
-### `consul_rolling_restart_delay_sec`
- - Adds a delay between node restart (Linux platforms only).
+ ### `consul_rolling_restart_delay_sec`
+ - Adds a delay between consul leave and node restart (Linux platforms only).
  - Default value: 5
 
 #### Custom Configuration Section

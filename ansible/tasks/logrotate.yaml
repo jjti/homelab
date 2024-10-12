@@ -1,0 +1,14 @@
+---
+- hosts: ser
+  become: true
+  
+  pre_tasks:
+
+  roles:
+    - role: ../roles/ansible-logrotate
+      vars:
+        logrotate_scripts:
+          - name: consul
+            path: "/var/log/consul/*.log"
+            options:
+              - weekly

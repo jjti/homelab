@@ -22,7 +22,7 @@ tailscale_package: tailscale
 tailscale_service: tailscaled
 
 tailscale_apt_dependencies:
-  - gnupg2
+  - gnupg
   - gnupg-agent
   - apt-transport-https
   - python3-apt
@@ -45,7 +45,7 @@ tailscale_apt_signkey: https://pkgs.tailscale.com/{{ release_stability | lower }
 
 tailscale_yum_dependencies:
   - yum-utils
-  - gnupg2
+  - gnupg
 
 tailscale_yum_repos:
   Amazon: https://pkgs.tailscale.com/{{ release_stability | lower }}/amazon-linux/{{ ansible_distribution_major_version }}/tailscale.repo
@@ -65,7 +65,9 @@ tailscale_dnf_repos:
   Amazon: https://pkgs.tailscale.com/{{ release_stability | lower }}/fedora/tailscale.repo
   Fedora: https://pkgs.tailscale.com/{{ release_stability | lower }}/fedora/tailscale.repo
 
-tailscale_opensuse_leap_repository: "https://pkgs.tailscale.com/stable/opensuse/leap/{{ ansible_distribution_version }}/tailscale.repo"
-tailscale_opensuse_tumbleweed_repository: https://pkgs.tailscale.com/stable/opensuse/tumbleweed/tailscale.repo
+tailscale_opensuse_leap_key: https://pkgs.tailscale.com/{{ release_stability | lower }}/opensuse/leap/{{ ansible_distribution_version }}/repo.gpg
+tailscale_opensuse_leap_repository: https://pkgs.tailscale.com/stable/opensuse/leap/{{ ansible_distribution_version }}/tailscale.repo
+tailscale_opensuse_tumbleweed_key: https://pkgs.tailscale.com/{{ release_stability | lower }}/opensuse/tumbleweed/repo.gpg
+tailscale_opensuse_tumbleweed_repository: https://pkgs.tailscale.com/{{ release_stability | lower }}/opensuse/tumbleweed/tailscale.repo
 
 tailscale_original_distribution_major_version: "{{ ansible_distribution_major_version }}"

@@ -25,6 +25,9 @@ ansible/consul:
 ansible/nomad:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/nomad.yaml
 
+ansible/logrotate:
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/logrotate.yaml
+
 # hcl
 hcl/fix:
 	go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*

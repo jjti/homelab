@@ -32,17 +32,27 @@ data "consul_acl_token_secret_id" "traefik" {
   accessor_id = consul_acl_token.traefik.id
 }
 
-// https://github.com/hashicorp/nomad/issues/8647
-resource "consul_config_entry" "proxy_defaults" {
-  kind = "proxy-defaults"
+# Cannot resolve below
+# https://github.com/hashicorp/nomad/issues/8647
 
-  # Note that only "global" is currently supported for proxy-defaults and that
-  # Consul will override this attribute if you set it to anything else.
-  name = "global"
+# │ Error: failed to set 'global' config entry: Unexpected response code: 500 (service "traefik" has protocol "tcp", which does not match defined listener protocol "http")
+# │ 
+# │   with consul_config_entry.proxy_defaults,
+# │   on consul.tf line 36, in resource "consul_config_entry" "proxy_defaults":
+# │   36: resource "consul_config_entry" "proxy_defaults" {
+# │ 
+# ╵
 
-  config_json = jsonencode({
-    Config = {
-      protocol = "http"
-    }
-  })
-}
+# resource "consul_config_entry" "proxy_defaults" {
+#   kind = "proxy-defaults"
+
+#   # Note that only "global" is currently supported for proxy-defaults and that
+#   # Consul will override this attribute if you set it to anything else.
+#   name = "global"
+
+#   config_json = jsonencode({
+#     Config = {
+#       protocol = "http"
+#     }
+#   })
+# }

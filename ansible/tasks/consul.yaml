@@ -34,11 +34,9 @@
   roles:
     - role: ../roles/ansible-consul
       vars:
-        auto_encrypt:
-          enabled: true
         consul_node_role: server
         consul_group_name: ser
-        consul_version: 1.17.1
+        consul_version: 1.19.2
 
         consul_acl_enable: true
         consul_acl_master_token_display: true
@@ -48,15 +46,24 @@
         consul_client_address: 0.0.0.0
         consul_configd_path: /etc/consul
 
-        consul_tls_enable: true
-        consul_ports_https: 8501
-        consul_ports_grpc_tls: 8503
-        consul_tls_ca_crt: consul-agent-ca.pem
-        consul_tls_server_crt: dc1-server-consul-0.pem
-        consul_tls_server_key: dc1-server-consul-0-key.pem
+        # I'm lazy
+        auto_encrypt:
+          enabled: false
+        consul_tls_enable: false
+        consul_ports_grpc: 8502  # not enabled by default despite being required by nomad
+        # consul_ports_grpc_tls: 8503
+        # consul_tls_ca_crt: consul-agent-ca.pem
+        # consul_tls_server_crt: dc1-server-consul-0.pem
+        # consul_tls_server_key: dc1-server-consul-0-key.pem
+        # consul_tls_files_remote_src: true
         consul_tls_verify_incoming: false
         consul_tls_verify_incoming_https: false
-        consul_tls_verify_incoming_rpc: true
+        consul_tls_verify_incoming_rpc: false
+
+        # This might need to be true on new hosts, I forget. Hitting below on upgrade:
+        # TASK [../roles/ansible-consul : Copy CA certificate] ***************************
+        # fatal: [ser5-1]: FAILED! => {"changed": false, "msg": "Source consul-agent-ca.pem not found"}
+        consul_tls_copy_keys: false
 
         consul_config_custom:
           tls:
