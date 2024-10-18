@@ -1,0 +1,10 @@
+---
+- name: Install GitHub Actions Runner
+  hosts: ser
+  become: true
+  roles:
+    - role: ../roles/github-actions-runner
+      vars:
+        github_account: jjti
+        github_repo: seqq
+        access_token: "{{ lookup('ansible.builtin.env', 'GHA_TOKEN') }}"

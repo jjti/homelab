@@ -7,3 +7,4 @@
 - import_playbook: ./tasks/consul.yaml
 - import_playbook: ./tasks/nomad.yaml
 - import_playbook: ./tasks/logrotate.yaml
+- import_playbook: ./tasks/gha-runner.yaml
