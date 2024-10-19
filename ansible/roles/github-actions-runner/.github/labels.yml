@@ -1,3 +1,0 @@
-- name: "ci"
-  color: "ffd966"
-  description: "Related to Github Actions Workflow"
