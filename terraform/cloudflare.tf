@@ -22,14 +22,6 @@ resource "cloudflare_record" "record_www" {
   proxied = true
 }
 
-resource "cloudflare_record" "record_nomad" {
-  name    = "nomad"
-  zone_id = var.cloudflare_zone_id
-  value   = cloudflare_tunnel.auto_tunnel.cname
-  type    = "CNAME"
-  proxied = true
-}
-
 resource "cloudflare_record" "record_ssh" {
   name    = "ssh"
   zone_id = var.cloudflare_zone_id

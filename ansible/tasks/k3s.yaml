@@ -1,0 +1,20 @@
+---
+- name: K3S
+  hosts: ser
+  become: true
+
+  vars:
+    k3s_etcd_datastore: true
+    k3s_use_unsupported_config: true
+
+    k3s_become: true
+    k3s_server:
+      write-kubeconfig-mode: 664
+
+  pre_tasks:
+    - name: Set each node to be a control node
+      ansible.builtin.set_fact:
+        k3s_control_node: true
+
+  roles:
+    - role: ../roles/k3s

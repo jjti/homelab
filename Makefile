@@ -19,11 +19,11 @@ ansible/deps:
 ansible/upgrade-roles:
 	$(OP_RUN) ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
 
+ansible/k3s:
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/k3s.yaml
+
 ansible/consul:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/consul.yaml
-
-ansible/nomad:
-	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/nomad.yaml
 
 ansible/logrotate:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/logrotate.yaml
