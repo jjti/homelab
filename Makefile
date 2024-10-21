@@ -28,17 +28,13 @@ ansible/consul:
 ansible/logrotate:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/logrotate.yaml
 
-# hcl
-hcl/fix:
-	go run github.com/hashicorp/hcl/v2/cmd/hclfmt@latest -w ./nomad/*
-
 # tf
 .PHONY: tf
-tf: tf/fix hcl/fix
+tf: tf/fix
 	$(OP_RUN) terraform -chdir=./terraform apply -auto-approve -parallelism=30
 
 tf/init:
-	$(OP_RUN) terraform -chdir=./terraform init
+	$(OP_RUN) terraform -chdir=./terraform init -upgrade
 
 tf/fix:
 	terraform fmt -recursive .

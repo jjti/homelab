@@ -15,19 +15,19 @@ terraform {
       version = "4.15.0"
     }
 
-    nomad = {
-      source  = "hashicorp/nomad"
-      version = "2.1.0"
+    helm = {
+      source  = "hashicorp/helm"
+      version = "2.16.1"
+    }
+
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "2.33.0"
     }
 
     random = {
       source  = "hashicorp/random"
       version = "3.5.1"
-    }
-
-    minio = {
-      source  = "aminueza/minio"
-      version = "2.0.1"
     }
   }
 
@@ -55,11 +55,12 @@ provider "consul" {
   address = "http://192.168.0.137:8500"
 }
 
-provider "minio" {
-  minio_server = "192.168.0.137:9000"
-  minio_user   = "admin"
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
 }
 
-provider "nomad" {
-  address = "http://192.168.0.137:4646"
+provider "kubernetes" {
+  config_path = "~/.kube/config"
 }

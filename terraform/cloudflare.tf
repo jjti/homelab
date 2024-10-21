@@ -1,7 +1,6 @@
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/terraform/
 
 locals {
-  nomad_hostname    = "nomad.${var.cloudflare_domain}"
   ssh_hostname      = "ssh.${var.cloudflare_domain}"
   download_hostname = "download.${var.cloudflare_domain}"
 }
@@ -70,37 +69,6 @@ resource "cloudflare_tunnel_config" "auto_tunnel" {
     ingress_rule {
       service = "http://localhost:4646"
     }
-  }
-}
-
-###
-# Nomad
-###
-
-resource "cloudflare_access_application" "nomad" {
-  zone_id                   = var.cloudflare_zone_id
-  name                      = "homelab nomad access"
-  domain                    = local.nomad_hostname
-  type                      = "self_hosted"
-  session_duration          = "2h"
-  auto_redirect_to_identity = true
-  allowed_idps              = []
-}
-
-resource "cloudflare_access_service_token" "token" {
-  zone_id = var.cloudflare_zone_id
-  name    = "homelab-token"
-}
-
-resource "cloudflare_access_policy" "nomad_token" {
-  application_id = cloudflare_access_application.nomad.id
-  zone_id        = var.cloudflare_zone_id
-  name           = "homelab service principal access policy"
-  precedence     = "1"
-  decision       = "non_identity"
-
-  include {
-    service_token = [cloudflare_access_service_token.token.id]
   }
 }
 
