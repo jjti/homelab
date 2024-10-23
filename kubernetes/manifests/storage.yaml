@@ -1,11 +1,12 @@
 # https://kubernetes.io/docs/concepts/storage/volumes/#local
 # https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner
 # https://github.com/minio/operator?tab=readme-ov-file#tenant-persistent-volumes
+%{ for node in split(",", nodes) }
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: sata-3
+  name: ${node}
 spec:
   capacity:
     storage: 2001111162552320m
@@ -23,4 +24,14 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - ser5-3
+          - ${node}
+%{ endfor }
+---
+# https://kubernetes.io/docs/concepts/storage/storage-classes/
+# https://github.com/minio/operator?tab=readme-ov-file#tenant-storage-class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer

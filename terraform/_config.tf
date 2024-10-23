@@ -5,19 +5,19 @@ terraform {
       version = "5.31.0"
     }
 
-    consul = {
-      source  = "hashicorp/consul"
-      version = "2.20.0"
-    }
-
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "4.15.0"
+      version = "4.44.0"
     }
 
     helm = {
       source  = "hashicorp/helm"
       version = "2.16.1"
+    }
+
+    kubectl = {
+      source  = "alekc/kubectl"
+      version = "2.1.2"
     }
 
     kubernetes = {
@@ -39,6 +39,10 @@ terraform {
   }
 }
 
+provider "kubectl" {
+  config_path = "~/.kube/config"
+}
+
 provider "aws" {
   region = "us-east-1"
 
@@ -50,10 +54,6 @@ provider "aws" {
 }
 
 provider "cloudflare" {}
-
-provider "consul" {
-  address = "http://192.168.0.137:8500"
-}
 
 provider "helm" {
   kubernetes {

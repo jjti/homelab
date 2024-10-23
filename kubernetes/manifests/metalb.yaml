@@ -1,0 +1,27 @@
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: ip-pool
+  namespace: default
+spec:
+  addresses:
+  - 192.168.0.130-192.168.0.132
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2-advertisement
+  namespace: default
+---
+# https://metallb.universe.tf/installation/
+# https://github.com/metallb/metallb/blob/main/charts/metallb/values.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: metallb
+  namespace: default
+spec:
+  chart: metallb
+  repo: https://metallb.github.io/metallb
+  targetNamespace: default

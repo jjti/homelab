@@ -1,9 +1,0 @@
----
-# https://kubernetes.io/docs/concepts/storage/storage-classes/
-# https://github.com/minio/operator?tab=readme-ov-file#tenant-storage-class
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: local-storage
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer

@@ -1,0 +1,60 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: headlamp-admin
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "headlamp-admin"
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: "headlamp-admin"   
+type: kubernetes.io/service-account-token  
+---
+# https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-admin
+  namespace: default
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: headlamp
+  namespace: default
+spec:
+  chart: headlamp
+  repo: https://headlamp-k8s.github.io/headlamp/
+  targetNamespace: default
+  valuesContent: |-
+    config:
+      baseURL: "/headlamp"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headlamp
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/headlamp"
+            backend:
+              service:
+                name: headlamp
+                port:
+                  number: 80

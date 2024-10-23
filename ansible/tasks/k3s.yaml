@@ -10,6 +10,9 @@
     k3s_become: true
     k3s_server:
       write-kubeconfig-mode: 664
+      disable:
+        - servicelb
+        - traefik
 
   pre_tasks:
     - name: Set each node to be a control node
