@@ -2,8 +2,8 @@
 data "kubectl_path_documents" "documents" {
   pattern = "../kubernetes/manifests/*.yaml"
   vars = {
-    minio_admin_password = var.minio_admin_password
     minio_access_key     = var.minio_access_key
+    minio_admin_password = var.minio_admin_password
     minio_secret_key     = var.minio_secret_key
     nodes                = "ser5-1,ser5-2,ser5-3"
   }

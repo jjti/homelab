@@ -37,6 +37,7 @@ spec:
   chart: headlamp
   repo: https://headlamp-k8s.github.io/headlamp/
   targetNamespace: default
+  # https://github.com/headlamp-k8s/headlamp/blob/main/charts/headlamp/values.yaml
   valuesContent: |-
     config:
       baseURL: "/headlamp"
