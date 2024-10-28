@@ -6,6 +6,9 @@ metadata:
   name: jellyfin
   labels:
     app: jellyfin
+  annotations:
+    "tailscale.com/expose": "true"
+    "tailscale.com/hostname": "stream"
 spec:
   type: LoadBalancer
   ports:
@@ -96,6 +99,9 @@ metadata:
   name: jellyseer
   labels:
     app: jellyseer
+  annotations:
+    "tailscale.com/expose": "false"
+    # "tailscale.com/hostname": "download"
 spec:
   type: LoadBalancer
   ports:

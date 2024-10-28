@@ -1,0 +1,16 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: tailscale
+  namespace: default
+spec:
+  # https://tailscale.com/kb/1236/kubernetes-operator#setup
+  chart: tailscale-operator
+  repo: https://pkgs.tailscale.com/helmcharts
+  targetNamespace: default
+  setString:
+  set:
+    "oauth.clientId": ${tailscale_oauth_key}
+    "oauth.clientSecret": ${tailscale_oauth_secret}
+  
