@@ -1,0 +1,11 @@
+---
+- hosts: ser
+  become: true
+  
+  pre_tasks:
+
+  roles:
+    - role: ../roles/ansible-role-tailscale
+      vars:
+        tailscale_authkey: "{{ lookup('community.general.onepassword', 'homelab', field='tailscaleauthkey', vault='Private') }}"
+        tailscale_args: "--ssh"

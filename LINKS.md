@@ -8,6 +8,8 @@
 
 ## Services
 
+Useful API docs: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#servicespec-v1-core
+
 ### Headlamp
 
 ```bash

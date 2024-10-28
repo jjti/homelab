@@ -1,0 +1,518 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  labels:
+    app: jellyfin
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8096
+    name: web
+  selector:
+    app: jellyfin
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jellyfin
+spec:
+  selector:
+    matchLabels:
+      app: jellyfin # has to match .spec.template.metadata.labels
+  serviceName: "jellyfin"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: jellyfin # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers: 
+      - name: jellyfin
+        image: "lscr.io/linuxserver/jellyfin:latest"
+        ports:
+        - containerPort: 8096
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: cache
+          mountPath: /cache
+        - name: tv
+          mountPath: /media1/tv
+        - name: movies
+          mountPath: /media2/movies
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+        - name: ROC_ENABLE_PRE_VEGA
+          value: "1"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-jellyfin"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: cache
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-cache"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: tv
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-tv-jellyfin"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: movies
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-movies-jellyfin"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyseer
+  labels:
+    app: jellyseer
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5055
+    name: web
+  selector:
+    app: jellyseer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jellyseer
+spec:
+  selector:
+    matchLabels:
+      app: jellyseer # has to match .spec.template.metadata.labels
+  serviceName: "jellyseer"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: jellyseer # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: jellyseer
+        image: fallenbagel/jellyseerr:latest
+        ports:
+        - containerPort: 5055
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-jellyseer"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarr
+  labels:
+    app: sonarr
+spec:
+  ports:
+  - port: 8989
+    name: web
+  selector:
+    app: sonarr
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sonarr
+spec:
+  selector:
+    matchLabels:
+      app: sonarr # has to match .spec.template.metadata.labels
+  serviceName: "sonarr"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: sonarr # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: sonarr
+        image: lscr.io/linuxserver/sonarr:latest
+        ports:
+        - containerPort: 8989
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: downloads
+          mountPath: /downloads
+        - name: tv
+          mountPath: /tv
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-sonarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: tv
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-tv-sonarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: downloads
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-downloads-sonarr"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarr
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/sonarr"
+            backend:
+              service:
+                name: sonarr
+                port:
+                  name: web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  labels:
+    app: radarr
+spec:
+  ports:
+  - port: 7878
+    name: web
+  selector:
+    app: radarr
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: radarr
+spec:
+  selector:
+    matchLabels:
+      app: radarr # has to match .spec.template.metadata.labels
+  serviceName: "radarr"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: radarr # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: radarr
+        image: lscr.io/linuxserver/radarr:latest
+        ports:
+        - containerPort: 7878
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: downloads
+          mountPath: /downloads
+        - name: movies
+          mountPath: /movies
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-radarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: movies
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-movies-radarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: downloads
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-downloads-radarr"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: radarr
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/radarr"
+            backend:
+              service:
+                name: radarr
+                port:
+                  name: web
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bazarr
+spec:
+  selector:
+    matchLabels:
+      app: bazarr # has to match .spec.template.metadata.labels
+  serviceName: "bazarr"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: bazarr # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: bazarr
+        image: hotio/bazarr:latest
+        ports:
+        - containerPort: 6767
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: downloads
+          mountPath: /data
+        - name: tv
+          mountPath: /tv
+        - name: movies
+          mountPath: /movies
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+        - name: UMASK
+          value: "002"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-bazarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: tv
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-tv-bazarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: movies
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-movies-bazarr"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: downloads
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-downloads-bazarr"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bazarr
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/bazarr"
+            backend:
+              service:
+                name: bazarr
+                port:
+                  number: 6767
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sabnzbd
+  labels:
+    app: sabnzbd
+spec:
+  ports:
+  - port: 8080
+    name: ui
+  - port: 6881
+    name: http
+  selector:
+    app: sabnzbd
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sabnzbd
+spec:
+  selector:
+    matchLabels:
+      app: sabnzbd # has to match .spec.template.metadata.labels
+  serviceName: "sabnzbd"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: sabnzbd # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: sabnzbd
+        image: lscr.io/linuxserver/sabnzbd:latest
+        ports:
+        - containerPort: 8080
+          name: ui
+        - containerPort: 6881
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: downloads
+          mountPath: /downloads
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "Etc/UTC"
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-config-sabnzbd"
+      resources:
+        requests:
+          storage: 1Mi
+  - metadata:
+      name: downloads
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "arr-downloads-sabnzbd"
+      resources:
+        requests:
+          storage: 1Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sabnzbd
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/sabnzbd"
+            backend:
+              service:
+                name: sabnzbd
+                port:
+                  number: 8080

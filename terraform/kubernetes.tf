@@ -6,6 +6,7 @@ data "kubectl_path_documents" "documents" {
     minio_admin_password = var.minio_admin_password
     minio_secret_key     = var.minio_secret_key
     nodes                = "ser5-1,ser5-2,ser5-3"
+    arr_volumes          = "sonarr,radarr,bazarr,sabnzbd,jellyseer,jellyfin"
   }
 }
 

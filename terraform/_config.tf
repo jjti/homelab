@@ -5,11 +5,6 @@ terraform {
       version = "5.31.0"
     }
 
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "4.44.0"
-    }
-
     helm = {
       source  = "hashicorp/helm"
       version = "2.16.1"
@@ -52,8 +47,6 @@ provider "aws" {
     }
   }
 }
-
-provider "cloudflare" {}
 
 provider "helm" {
   kubernetes {

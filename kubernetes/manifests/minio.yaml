@@ -7,7 +7,7 @@ metadata:
   namespace: default
 spec:
   chart: minio
-  repo: https://charts.min.io/
+  repo: https://charts.min.io
   targetNamespace: default
   set:
   # https://github.com/minio/minio/blob/master/helm/minio/values.yaml
@@ -29,7 +29,7 @@ spec:
     persistence:
       enabled: true
       storageClass: "local-storage"
-      size: 1.78Ti
+      size: 1800Gi
 
     securityContext:
       enabled: true
@@ -44,4 +44,4 @@ spec:
     users:
       - accessKey: ${minio_access_key}
         secretKey: ${minio_secret_key}
-        policy: readwrite
+        policy: consoleAdmin

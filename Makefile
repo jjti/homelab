@@ -2,10 +2,19 @@ define OP_RUN
   op run --env-file secrets.env --
 endef
 
-# ssh
-.PHONY: ssh
-ssh:
-	sshuttle -NHr homelab 0/0
+# tf
+.PHONY: tf
+tf: tf/fix
+	$(OP_RUN) terraform -chdir=./terraform apply -auto-approve -parallelism=30
+
+tf/init:
+	$(OP_RUN) terraform -chdir=./terraform init -upgrade
+
+tf/state:
+	$(OP_RUN) terraform -chdir=./terraform state list
+
+tf/fix:
+	terraform fmt -recursive .
 
 # ansible
 .PHONY: ansible
@@ -24,14 +33,3 @@ ansible/k3s:
 
 ansible/logrotate:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/logrotate.yaml
-
-# tf
-.PHONY: tf
-tf: tf/fix
-	$(OP_RUN) terraform -chdir=./terraform apply -auto-approve -parallelism=30
-
-tf/init:
-	$(OP_RUN) terraform -chdir=./terraform init -upgrade
-
-tf/fix:
-	terraform fmt -recursive .
