@@ -13,6 +13,11 @@ variable "minio_secret_key" {
   sensitive = true
 }
 
+variable "pihole_password" {
+  type      = string
+  sensitive = true
+}
+
 variable "tailscale_oauth_key" {
   type      = string
   sensitive = true

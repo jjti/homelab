@@ -25,7 +25,37 @@ spec:
           operator: In
           values:
           - ${node}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pihole-${node}
+spec:
+  capacity:
+    storage: 10Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: pihole
+  local:
+    path: /usr/local/var/pihole
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - ${node}
 %{ endfor }
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pihole
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
 ---
 # https://kubernetes.io/docs/concepts/storage/storage-classes/
 # https://github.com/minio/operator?tab=readme-ov-file#tenant-storage-class

@@ -1,10 +1,11 @@
 # Links
 
-| Service   | URL                            |
-| --------- | ------------------------------ |
-| Headlamp  | http://192.168.0.130/headlamp/ |
-| MinIO     | http://192.168.0.137:9001      |
-| New Relic | https://one.newrelic.com/      |
+| Service   | URL                                  |
+| --------- | ------------------------------------ |
+| Headlamp  | http://192.168.0.201/headlamp/       |
+| Pi-hole   | http://192.168.0.201/admin/index.php |
+| MinIO     | http://192.168.0.137:9001            |
+| New Relic | https://one.newrelic.com/            |
 
 ## Services
 

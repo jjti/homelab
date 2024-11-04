@@ -27,4 +27,5 @@ spec:
         serviceMonitor:
           enabled: false
       config:
+        ssl-redirect: "false"
         use-forwarded-headers: "true"
