@@ -1,3 +1,12 @@
+variable "gha_repo" {
+  type = string
+}
+
+variable "gha_token" {
+  type      = string
+  sensitive = true
+}
+
 variable "minio_admin_password" {
   type      = string
   sensitive = true
@@ -27,4 +36,3 @@ variable "tailscale_oauth_secret" {
   type      = string
   sensitive = true
 }
-

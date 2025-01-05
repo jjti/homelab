@@ -1,0 +1,27 @@
+# https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller
+# failing on an inability to reach docker. Something about the mount is failing.
+# retry if this succeeds: https://github.com/actions/actions-runner-controller/issues/3257
+# ---
+# apiVersion: helm.cattle.io/v1
+# kind: HelmChart
+# metadata:
+#   name: actions-runner-controller
+#   namespace: default
+# spec:
+#   chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
+#   targetNamespace: default
+#   set:
+# ---
+# apiVersion: helm.cattle.io/v1
+# kind: HelmChart
+# metadata:
+#   name: actions-runner-controller-set
+#   namespace: default
+# spec:
+#   chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+#   targetNamespace: default
+#   set:
+#   valuesContent: |-
+#     githubConfigUrl: ${gha_repo}
+#     githubConfigSecret:
+#       github_token: ${gha_token}

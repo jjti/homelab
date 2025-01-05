@@ -28,6 +28,7 @@ ansible/deps:
 ansible/upgrade-roles:
 	$(OP_RUN) ansible-galaxy role install -r ./ansible/roles/requirements.yaml --force -p ./ansible/roles
 
+# this also upgrades to the latest release version of k3s
 ansible/k3s:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/k3s.yaml
 

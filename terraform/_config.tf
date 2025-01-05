@@ -5,11 +5,6 @@ terraform {
       version = "5.31.0"
     }
 
-    helm = {
-      source  = "hashicorp/helm"
-      version = "2.16.1"
-    }
-
     kubectl = {
       source  = "alekc/kubectl"
       version = "2.1.2"
@@ -35,7 +30,8 @@ terraform {
 }
 
 provider "kubectl" {
-  config_path = "~/.kube/config"
+  // get this from `cat /etc/rancher/k3s/k3s.yaml` then update the IP to 192.168.0.137
+  config_path = "~/.kube/homelab"
 }
 
 provider "aws" {
@@ -48,12 +44,6 @@ provider "aws" {
   }
 }
 
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-}
-
 provider "kubernetes" {
-  config_path = "~/.kube/config"
+  config_path = "~/.kube/homelab"
 }
