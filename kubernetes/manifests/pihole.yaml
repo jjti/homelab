@@ -10,6 +10,7 @@ metadata:
   annotations:
     # https://metallb.universe.tf/usage/#ip-address-sharing
     metallb.universe.tf/allow-shared-ip: pihole-dns
+    "external-dns.alpha.kubernetes.io/hostname": "pihole.com"
 spec:
   type: LoadBalancer
   # loadBalancerIP: "192.168.0.128"

@@ -6,6 +6,7 @@ metadata:
   labels:
     app: jellyfin
   annotations:
+    "external-dns.alpha.kubernetes.io/hostname": "jellyfin.com,stream.com"
     "tailscale.com/expose": "true"
     "tailscale.com/hostname": "stream"
 spec:
@@ -99,6 +100,7 @@ metadata:
   labels:
     app: jellyseer
   annotations:
+    "external-dns.alpha.kubernetes.io/hostname": "jellyseer.com,download.com"
     "tailscale.com/expose": "true"
     "tailscale.com/hostname": "download"
 spec:
@@ -161,6 +163,8 @@ metadata:
   name: sonarr
   labels:
     app: sonarr
+  annotations:
+    "external-dns.alpha.kubernetes.io/hostname": "sonarr.com"
 spec:
   ports:
   - port: 8989
@@ -255,6 +259,8 @@ metadata:
   name: radarr
   labels:
     app: radarr
+  annotations:
+    "external-dns.alpha.kubernetes.io/hostname": "radarr.com"
 spec:
   ports:
   - port: 7878

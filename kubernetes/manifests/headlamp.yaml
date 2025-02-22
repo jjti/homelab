@@ -39,23 +39,13 @@ spec:
   targetNamespace: default
   # https://github.com/headlamp-k8s/headlamp/blob/main/charts/headlamp/values.yaml
   valuesContent: |-
-    config:
-      baseURL: "/headlamp"
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: headlamp
-  namespace: default
-spec:
-  ingressClassName: nginx
-  rules:
-    - http:
-        paths:
-          - pathType: Prefix
-            path: "/headlamp"
-            backend:
-              service:
-                name: headlamp
-                port:
-                  number: 80
+    ingress:
+      enabled: true
+      annotations:
+      labels:
+      ingressClassName: nginx
+      hosts:
+        - host: headlamp.com
+          paths:
+            - path: /
+              type: ImplementationSpecific

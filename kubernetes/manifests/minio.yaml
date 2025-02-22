@@ -5,6 +5,8 @@ metadata:
   name: minio
   labels:
     app: minio
+  annotations:
+    "external-dns.alpha.kubernetes.io/hostname": "minio.com"
 spec:
   type: LoadBalancer
   ports:
