@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgtg
+  namespace: default
+  labels:
+    app: tgtg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tgtg
+  template:
+    metadata:
+      labels:
+        app: tgtg
+    spec:
+      containers:
+      - name: tgtg
+        image: jjtimmons/tgtg:latest
+        env:
+          - name: DISCORD_WEBHOOK
+            valueFrom:
+              secretKeyRef:
+                name: tgtg-secret
+                key: discord_webhook
+          - name: TGTG_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tgtg-secret
+                key: tgtg_access
+          - name: TGTG_REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tgtg-secret
+                key: tgtg_refresh
+
+# export KUBECONFIG="/users/josh/.kube/homelab"
+# kubectl create secret generic tgtg-secret --namespace default --from-literal=

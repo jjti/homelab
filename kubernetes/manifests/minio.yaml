@@ -1,47 +1,118 @@
 ---
-# https://www.suse.com/support/kb/doc/?id=000020082
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
+apiVersion: v1
+kind: Service
 metadata:
   name: minio
-  namespace: default
+  labels:
+    app: minio
 spec:
-  chart: minio
-  repo: https://charts.min.io
-  targetNamespace: default
-  set:
-  # https://github.com/minio/minio/blob/master/helm/minio/values.yaml
-  valuesContent: |-
-    image:
-      tag: RELEASE.2024-12-18T13-15-44Z
+  type: LoadBalancer
+  ports:
+  - port: 9000
+    targetPort: 9000
+    name: web
+  - port: 80
+    targetPort: 9001
+    name: console
+  selector:
+    app: minio
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio # has to match .spec.template.metadata.labels
+  serviceName: "minio"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: minio # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers: 
+      - name: minio
+        image: "quay.io/minio/minio"
+        args:
+          - "server"
+          - "--console-address"
+          - ":9001"
+          - "--json"
+          - "--anonymous"
+          - "/minio"
+        ports:
+        - containerPort: 9000
+          name: web
+        - containerPort: 9001
+          name: console
+        volumeMounts:
+        - name: sata
+          mountPath: /minio
+        env:
+        - name: PUID
+          value: "1001"
+        - name: PGID
+          value: "1001"
+        - name: MINIO_ROOT_USER
+          value: "minio"
+        - name: MINIO_ROOT_PASSWORD
+          value: ${minio_admin_password}
+  volumeClaimTemplates:
+  - metadata:
+      name: sata
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 1800Gi
+# ---
+# # https://www.suse.com/support/kb/doc/?id=000020082
+# apiVersion: helm.cattle.io/v1
+# kind: HelmChart
+# metadata:
+#   name: minio
+# spec:
+#   chart: minio
+#   repo: https://charts.min.io
+#   set:
+#   # https://github.com/minio/minio/blob/master/helm/minio/values.yaml
+#   valuesContent: |-
+#     image:
+#       tag: RELEASE.2024-12-18T13-15-44Z
 
-    extraArgs:
-      - "--json"
+#     extraArgs:
+#       - "--json"
 
-    environment:
-      MINIO_BROWSER_LOGIN_ANIMATION: "off"
+#     environment:
+#       MINIO_BROWSER_LOGIN_ANIMATION: "off"
 
-    replicas: 3
+#     replicas: 1
+#     mode: "standalone"
 
-    rootUser: minio
-    rootPassword: ${minio_admin_password}
+#     rootUser: minio
+#     rootPassword: ${minio_admin_password}
 
-    persistence:
-      enabled: true
-      storageClass: "local-storage"
-      size: 1800Gi
+#     persistence:
+#       enabled: true
+#       storageClass: "local-storage"
+#       size: 1800Gi
 
-    securityContext:
-      enabled: true
-      runAsUser: 0
-      runAsGroup: 2
-      fsGroup: 2
+#     securityContext:
+#       enabled: true
+#       runAsUser: 0
+#       runAsGroup: 2
+#       fsGroup: 2
 
-    resources:
-      requests:
-        memory: 8Gi
+#     resources:
+#       requests:
+#         memory: 8Gi
 
-    users:
-      - accessKey: ${minio_access_key}
-        secretKey: ${minio_secret_key}
-        policy: consoleAdmin
+#     users:
+#       - accessKey: ${minio_access_key}
+#         secretKey: ${minio_secret_key}
+#         policy: consoleAdmin

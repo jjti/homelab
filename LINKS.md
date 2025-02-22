@@ -4,12 +4,13 @@
 | --------- | ------------------------------------ |
 | Headlamp  | http://192.168.0.201/headlamp/       |
 | Pi-hole   | http://192.168.0.201/admin/index.php |
-| MinIO     | http://192.168.0.137:9001            |
 | New Relic | https://one.newrelic.com/            |
 
 ## Services
 
 Useful API docs: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#servicespec-v1-core
+
+TODO: https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/pihole.md
 
 ### Headlamp
 

@@ -1,2 +1,3 @@
 .terraform/
 emails
+.DS_Store
