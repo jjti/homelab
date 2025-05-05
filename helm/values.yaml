@@ -1,0 +1,15 @@
+arrVolumes:
+  - sonarr
+  - radarr
+  - bazarr
+  - sabnzbd
+  - jellyseer
+  - jellyfin
+
+nodes:
+  - ser5-1
+  - ser5-2
+  - ser5-3
+
+tailscaleClientId: ""
+tailscaleClientSecret: ""

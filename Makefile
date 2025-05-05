@@ -2,19 +2,15 @@ define OP_RUN
   op run --env-file secrets.env --
 endef
 
-# tf
-.PHONY: tf
-tf: tf/fix
-	$(OP_RUN) terraform -chdir=./terraform apply -auto-approve -parallelism=30
+# helm
+.PHONY: helm
+helm:
+	kubectx homelab
+	@helm upgrade homelab ./helm \
+		--values ./helm/values.yaml \
+		--set "tailscaleClientId=$(shell op read op://Private/homelab/tailscaleoauthkey)" \
+		--set "tailscaleClientSecret=$(shell op read op://Private/homelab/tailscaleoauthsecret)"
 
-tf/init:
-	$(OP_RUN) terraform -chdir=./terraform init -upgrade
-
-tf/state:
-	$(OP_RUN) terraform -chdir=./terraform state list
-
-tf/fix:
-	terraform fmt -recursive .
 
 # ansible
 .PHONY: ansible

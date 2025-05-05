@@ -1,5 +1,4 @@
 ---
 - import_playbook: ./tasks/sudoless.yaml
 - import_playbook: ./tasks/docker.yaml
-- import_playbook: ./tasks/cloudflared.yaml
 - import_playbook: ./tasks/k3s.yaml

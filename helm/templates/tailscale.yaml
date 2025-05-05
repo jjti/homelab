@@ -11,6 +11,6 @@ spec:
   targetNamespace: default
   setString:
   set:
-    "oauth.clientId": ${tailscale_oauth_key}
-    "oauth.clientSecret": ${tailscale_oauth_secret}
+    "oauth.clientId": {{ .Values.tailscaleClientId }}
+    "oauth.clientSecret": {{ .Values.tailscaleClientSecret }}
   

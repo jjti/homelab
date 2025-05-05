@@ -10,19 +10,17 @@ metadata:
   annotations:
     # https://metallb.universe.tf/usage/#ip-address-sharing
     metallb.universe.tf/allow-shared-ip: pihole-dns
-    "external-dns.alpha.kubernetes.io/hostname": "pihole.com"
 spec:
   type: LoadBalancer
-  # loadBalancerIP: "192.168.0.128"
   ports:
-  - port: 53
-    targetPort: 53
-    name: dns-tcp
-    protocol: TCP
-  - port: 80
-    targetPort: 80
-    name: web
-    protocol: TCP
+    - port: 53
+      targetPort: 53
+      name: dns-tcp
+      protocol: TCP
+    - port: 80
+      targetPort: 80
+      name: web
+      protocol: TCP
   selector:
     app: pihole
 ---
@@ -36,12 +34,11 @@ metadata:
     metallb.universe.tf/allow-shared-ip: pihole-dns
 spec:
   type: LoadBalancer
-  # loadBalancerIP: "192.168.0.128"
   ports:
-  - port: 53
-    targetPort: 53
-    name: dns-udp
-    protocol: UDP
+    - port: 53
+      targetPort: 53
+      name: dns-udp
+      protocol: UDP
   selector:
     app: pihole
 ---
@@ -62,43 +59,40 @@ spec:
         app: pihole # has to match .spec.selector.matchLabels
     spec:
       containers:
-      - name: pihole
-        image: "pihole/pihole:latest"
-        ports:
-        - port: 53
-          containerPort: 53
-          name: dns-tcp
-          protocol: TCP
-        - port: 53
-          containerPort: 53
-          name: dns-udp
-          protocol: UDP
-        - port: 80
-          containerPort: 80
-          name: web
-          protocol: TCP
-        livenessProbe:
-          tcpSocket:
-            port: dns-tcp
-        volumeMounts:
-        - name: config
-          mountPath: /etc/pihole
-        # - name: config2
-        #   mountPath: /etc/dnsmasq.d
-        env:
-        - name: TZ
-          value: "America/New_York"
-        - name: WEBPASSWORD
-          value: "${pihole_password}"
+        - name: pihole
+          image: "pihole/pihole:latest"
+          ports:
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 80
+              name: web
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: dns-tcp
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+          # - name: config2
+          #   mountPath: /etc/dnsmasq.d
+          env:
+            - name: TZ
+              value: "America/New_York"
+            - name: WEBPASSWORD
+              value: admin
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "pihole"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "pihole"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

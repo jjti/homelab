@@ -1,12 +1,12 @@
 # https://kubernetes.io/docs/concepts/storage/volumes/#local
 # https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner
 # https://github.com/minio/operator?tab=readme-ov-file#tenant-persistent-volumes
-%{ for node in split(",", nodes) }
+{{- range .Values.nodes }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: sata-${node}
+  name: sata-{{ . }}
 spec:
   capacity:
     storage: 1.8Ti
@@ -24,12 +24,12 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - ${node}
+          - {{ . }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pihole-${node}
+  name: pihole-{{ . }}
 spec:
   capacity:
     storage: 10Mi
@@ -47,8 +47,8 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - ${node}
-%{ endfor }
+          - {{ . }}
+{{- end }}
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -65,12 +65,13 @@ metadata:
   name: local-storage
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-%{ for vol in split(",", arr_volumes) }
+
+{{- range .Values.arrVolumes }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: arr-config-${vol}
+  name: arr-config-{{ . }}
 spec:
   capacity:
     storage: 1Gi
@@ -78,9 +79,9 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: arr-config-${vol}
+  storageClassName: arr-config-{{ . }}
   local:
-    path: /usr/local/var/config/${vol}
+    path: /usr/local/var/config/{{ . }}
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -93,10 +94,11 @@ spec:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: arr-config-${vol}
+  name: arr-config-{{ . }}
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-%{ endfor }
+{{- end }}
+
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -120,6 +122,7 @@ spec:
           operator: In
           values:
           - ser5-3
+
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -127,12 +130,13 @@ metadata:
   name: arr-cache
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-%{ for vol in split(",", arr_volumes) }
+
+{{- range .Values.arrVolumes }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: arr-downloads-${vol}
+  name: arr-downloads-{{ . }}
 spec:
   capacity:
     storage: 1Gi
@@ -140,7 +144,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: arr-downloads-${vol}
+  storageClassName: arr-downloads-{{ . }}
   local:
     path: /usr/local/var/downloads
   nodeAffinity:
@@ -155,14 +159,14 @@ spec:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: arr-downloads-${vol}
+  name: arr-downloads-{{ . }}
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: arr-movies-${vol}
+  name: arr-movies-{{ . }}
 spec:
   capacity:
     storage: 1Gi
@@ -170,7 +174,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: arr-movies-${vol}
+  storageClassName: arr-movies-{{ . }}
   local:
     path: /usr/local/var/movies
   nodeAffinity:
@@ -185,14 +189,14 @@ spec:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: arr-movies-${vol}
+  name: arr-movies-{{ . }}
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: arr-tv-${vol}
+  name: arr-tv-{{ . }}
 spec:
   capacity:
     storage: 1Gi
@@ -200,7 +204,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: arr-tv-${vol}
+  storageClassName: arr-tv-{{ . }}
   local:
     path: /usr/local/var/tv
   nodeAffinity:
@@ -215,7 +219,7 @@ spec:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: arr-tv-${vol}
+  name: arr-tv-{{ . }}
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-%{ endfor }
+{{- end }}

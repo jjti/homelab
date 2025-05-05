@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    app: minio
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: web
+    - port: 80
+      targetPort: 9001
+      name: console
+  selector:
+    app: minio
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio # has to match .spec.template.metadata.labels
+  serviceName: "minio"
+  replicas: 1 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: minio # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: minio
+          image: "quay.io/minio/minio"
+          args:
+            - "server"
+            - "--console-address"
+            - ":9001"
+            - "--json"
+            - "--anonymous"
+            - "/minio"
+          ports:
+            - containerPort: 9000
+              name: web
+            - containerPort: 9001
+              name: console
+          volumeMounts:
+            - name: sata
+              mountPath: /minio
+          env:
+            - name: PUID
+              value: "1001"
+            - name: PGID
+              value: "1001"
+            - name: MINIO_ROOT_USER
+              value: "minio"
+            - name: MINIO_ROOT_PASSWORD
+              value: "admin"
+  volumeClaimTemplates:
+    - metadata:
+        name: sata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "local-storage"
+        resources:
+          requests:
+            storage: 1800Gi
