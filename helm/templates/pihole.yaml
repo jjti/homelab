@@ -10,6 +10,7 @@ metadata:
   annotations:
     # https://metallb.universe.tf/usage/#ip-address-sharing
     metallb.universe.tf/allow-shared-ip: pihole-dns
+    metallb.universe.tf/loadBalancerIPs: 192.168.0.201
 spec:
   type: LoadBalancer
   ports:
@@ -32,6 +33,7 @@ metadata:
     app: pihole
   annotations:
     metallb.universe.tf/allow-shared-ip: pihole-dns
+    metallb.universe.tf/loadBalancerIPs: 192.168.0.201
 spec:
   type: LoadBalancer
   ports:
@@ -83,7 +85,7 @@ spec:
             - name: TZ
               value: "America/New_York"
             - name: WEBPASSWORD
-              value: admin
+              value: {{ .Values.piholePassword | quote }}
   volumeClaimTemplates:
     - metadata:
         name: config

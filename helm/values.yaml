@@ -11,5 +11,4 @@ nodes:
   - ser5-2
   - ser5-3
 
-tailscaleClientId: ""
-tailscaleClientSecret: ""
+piholePassword: ""

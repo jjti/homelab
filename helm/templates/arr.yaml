@@ -8,6 +8,7 @@ metadata:
   annotations:
     "tailscale.com/expose": "true"
     "tailscale.com/hostname": "stream"
+    "metallb.universe.tf/loadBalancerIPs": 192.168.0.200
 spec:
   type: LoadBalancer
   ports:
@@ -101,6 +102,7 @@ metadata:
   annotations:
     "tailscale.com/expose": "true"
     "tailscale.com/hostname": "download"
+    "metallb.universe.tf/loadBalancerIPs": 192.168.0.203
 spec:
   type: LoadBalancer
   ports:
