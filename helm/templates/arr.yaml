@@ -12,9 +12,9 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    targetPort: 8096
-    name: web
+    - port: 80
+      targetPort: 8096
+      name: web
   selector:
     app: jellyfin
 ---
@@ -35,63 +35,63 @@ spec:
         app: jellyfin # has to match .spec.selector.matchLabels
     spec:
       terminationGracePeriodSeconds: 10
-      containers: 
-      - name: jellyfin
-        image: "lscr.io/linuxserver/jellyfin:latest"
-        ports:
-        - containerPort: 8096
-          name: web
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: cache
-          mountPath: /cache
-        - name: tv
-          mountPath: /media1/tv
-        - name: movies
-          mountPath: /media2/movies
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: ROC_ENABLE_PRE_VEGA
-          value: "1"
+      containers:
+        - name: jellyfin
+          image: "lscr.io/linuxserver/jellyfin:latest"
+          ports:
+            - containerPort: 8096
+              name: web
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: cache
+              mountPath: /cache
+            - name: tv
+              mountPath: /media1/tv
+            - name: movies
+              mountPath: /media2/movies
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: ROC_ENABLE_PRE_VEGA
+              value: "1"
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-jellyfin"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: cache
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-cache"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: tv
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-tv-jellyfin"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: movies
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-movies-jellyfin"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-jellyfin"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: cache
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-cache"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: tv
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-tv-jellyfin"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: movies
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-movies-jellyfin"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: v1
 kind: Service
@@ -106,9 +106,9 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    targetPort: 5055
-    name: web
+    - port: 80
+      targetPort: 5055
+      name: web
   selector:
     app: jellyseer
 ---
@@ -130,32 +130,32 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: jellyseer
-        image: fallenbagel/jellyseerr:develop
-        ports:
-        - containerPort: 5055
-          name: web
-        volumeMounts:
-        - name: config
-          mountPath: /app/config
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: LOG_LEVEL
-          value: debug
+        - name: jellyseer
+          image: fallenbagel/jellyseerr:develop
+          ports:
+            - containerPort: 5055
+              name: web
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: LOG_LEVEL
+              value: debug
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-jellyseer"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-jellyseer"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: v1
 kind: Service
@@ -166,8 +166,8 @@ metadata:
   annotations:
 spec:
   ports:
-  - port: 8989
-    name: web
+    - port: 8989
+      name: web
   selector:
     app: sonarr
 ---
@@ -189,50 +189,50 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: sonarr
-        image: lscr.io/linuxserver/sonarr:latest
-        ports:
-        - containerPort: 8989
-          name: web
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: downloads
-          mountPath: /downloads
-        - name: tv
-          mountPath: /tv
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "Etc/UTC"
+        - name: sonarr
+          image: lscr.io/linuxserver/sonarr:latest
+          ports:
+            - containerPort: 8989
+              name: web
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+            - name: tv
+              mountPath: /tv
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "Etc/UTC"
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-sonarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: tv
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-tv-sonarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: downloads
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-downloads-sonarr"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-sonarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: tv
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-tv-sonarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: downloads
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-downloads-sonarr"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -261,8 +261,8 @@ metadata:
   annotations:
 spec:
   ports:
-  - port: 7878
-    name: web
+    - port: 7878
+      name: web
   selector:
     app: radarr
 ---
@@ -284,50 +284,50 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: radarr
-        image: lscr.io/linuxserver/radarr:latest
-        ports:
-        - containerPort: 7878
-          name: web
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: downloads
-          mountPath: /downloads
-        - name: movies
-          mountPath: /movies
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
+        - name: radarr
+          image: lscr.io/linuxserver/radarr:latest
+          ports:
+            - containerPort: 7878
+              name: web
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+            - name: movies
+              mountPath: /movies
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-radarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: movies
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-movies-radarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: downloads
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-downloads-radarr"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-radarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: movies
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-movies-radarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: downloads
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-downloads-radarr"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -365,62 +365,62 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: bazarr
-        image: hotio/bazarr:latest
-        ports:
-        - containerPort: 6767
-          name: web
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: downloads
-          mountPath: /data
-        - name: tv
-          mountPath: /tv
-        - name: movies
-          mountPath: /movies
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
-        - name: UMASK
-          value: "002"
+        - name: bazarr
+          image: lscr.io/linuxserver/bazarr:latest
+          ports:
+            - containerPort: 6767
+              name: web
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /data
+            - name: tv
+              mountPath: /tv
+            - name: movies
+              mountPath: /movies
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
+            - name: UMASK
+              value: "002"
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-bazarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: tv
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-tv-bazarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: movies
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-movies-bazarr"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: downloads
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-downloads-bazarr"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-bazarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: tv
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-tv-bazarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: movies
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-movies-bazarr"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: downloads
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-downloads-bazarr"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -448,10 +448,10 @@ metadata:
     app: sabnzbd
 spec:
   ports:
-  - port: 8080
-    name: ui
-  - port: 6881
-    name: http
+    - port: 8080
+      name: ui
+    - port: 6881
+      name: http
   selector:
     app: sabnzbd
 ---
@@ -473,42 +473,42 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: sabnzbd
-        image: lscr.io/linuxserver/sabnzbd:latest
-        ports:
-        - containerPort: 8080
-          name: ui
-        - containerPort: 6881
-          name: http
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: downloads
-          mountPath: /downloads
-        env:
-        - name: PUID
-          value: "1000"
-        - name: PGID
-          value: "1000"
-        - name: TZ
-          value: "America/New_York"
+        - name: sabnzbd
+          image: lscr.io/linuxserver/sabnzbd:latest
+          ports:
+            - containerPort: 8080
+              name: ui
+            - containerPort: 6881
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/New_York"
   volumeClaimTemplates:
-  - metadata:
-      name: config
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-config-sabnzbd"
-      resources:
-        requests:
-          storage: 1Mi
-  - metadata:
-      name: downloads
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "arr-downloads-sabnzbd"
-      resources:
-        requests:
-          storage: 1Mi
+    - metadata:
+        name: config
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-config-sabnzbd"
+        resources:
+          requests:
+            storage: 1Mi
+    - metadata:
+        name: downloads
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "arr-downloads-sabnzbd"
+        resources:
+          requests:
+            storage: 1Mi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
