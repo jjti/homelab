@@ -1,5 +1,8 @@
 {
   "editor.formatOnSave": true,
+  "[yaml]": {
+    "editor.formatOnSave": false
+  },
   "[hcl]": {
     "editor.defaultFormatter": "hashicorp.terraform",
     "editor.formatOnSave": true,

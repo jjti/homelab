@@ -86,6 +86,8 @@ spec:
               value: "America/New_York"
             - name: WEBPASSWORD
               value: {{ .Values.piholePassword | quote }}
+            - name: DNSMASQ_USER
+              value: root
   volumeClaimTemplates:
     - metadata:
         name: config

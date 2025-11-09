@@ -1,0 +1,23 @@
+---
+- name: mergerfs
+  hosts: ser
+  become: true
+  roles:
+    - role: "../roles/ansible-role-mergerfs"
+
+  vars:
+    mergerfs_mounts:
+      - path: /mnt/mergerfs
+        branches:
+          - /usr/local/var
+          - /mnt/sata/var
+        options: cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false
+
+  pre_tasks:
+    - name: Ensure /mnt/sata/var directory exists
+      ansible.builtin.file:
+        path: /mnt/sata/var
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root

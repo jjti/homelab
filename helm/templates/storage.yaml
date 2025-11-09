@@ -146,7 +146,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: arr-downloads-{{ . }}
   local:
-    path: /usr/local/var/downloads
+    path: /mnt/mergerfs/downloads
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -176,7 +176,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: arr-movies-{{ . }}
   local:
-    path: /usr/local/var/movies
+    path: /mnt/mergerfs/movies
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -206,7 +206,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: arr-tv-{{ . }}
   local:
-    path: /usr/local/var/tv
+    path: /mnt/mergerfs/tv
   nodeAffinity:
     required:
       nodeSelectorTerms:

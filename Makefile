@@ -4,9 +4,7 @@ endef
 
 # helm
 .PHONY: helm
-helm: helm-ctx helm-metallb helm-headlamp helm-tailscale
-	@helm upgrade homelab ./helm --values ./helm/values.yaml \
-		--set "piholePassword=$(shell op read op://Private/pihole/password)"
+helm: helm-ctx helm-metallb helm-headlamp helm-tailscale helm-custom
 
 helm-ctx:
 	kubectx homelab
@@ -25,9 +23,13 @@ helm-headlamp:
 
 helm-tailscale:
 	helm repo add tailscale https://pkgs.tailscale.com/helmcharts
-	@helm upgrade tailscale tailscale/tailscale-operator --force \
+	@helm install tailscale tailscale/tailscale-operator --force \
 		--set "oauth.clientId=$(shell op read op://Private/homelab/tailscaleoauthkey)" \
 		--set "oauth.clientSecret=$(shell op read op://Private/homelab/tailscaleoauthsecret)"
+
+helm-custom:
+	@helm upgrade homelab ./helm --values ./helm/values.yaml \
+		--set "piholePassword=$(shell op read op://Private/pihole/password)"
 
 # ansible
 .PHONY: ansible
@@ -35,7 +37,7 @@ ansible:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/index.yaml
 
 ansible/deps:
-	ansible-galaxy collection install ansible.utils
+	ansible-galaxy collection install ansible.utils ansible.posix
 
 # this seems really weird
 ansible/upgrade-roles:
@@ -47,3 +49,6 @@ ansible/k3s:
 
 ansible/logrotate:
 	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/logrotate.yaml
+
+ansible/mergerfs:
+	$(OP_RUN) ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/mergerfs.yaml

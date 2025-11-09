@@ -5,3 +5,4 @@
   name: k3s
   scm: git
   version: main
+- src: https://github.com/tigattack/ansible-role-mergerfs.git
