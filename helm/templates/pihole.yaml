@@ -8,9 +8,9 @@ metadata:
   labels:
     app: pihole
   annotations:
-    # https://metallb.universe.tf/usage/#ip-address-sharing
-    metallb.universe.tf/allow-shared-ip: pihole-dns
-    metallb.universe.tf/loadBalancerIPs: 192.168.0.201
+    # https://metallb.io/usage/#ip-address-sharing
+    metallb.io/allow-shared-ip: pihole-dns
+    metallb.io/loadBalancerIPs: 192.168.0.201
 spec:
   type: LoadBalancer
   ports:
@@ -32,8 +32,8 @@ metadata:
   labels:
     app: pihole
   annotations:
-    metallb.universe.tf/allow-shared-ip: pihole-dns
-    metallb.universe.tf/loadBalancerIPs: 192.168.0.201
+    metallb.io/allow-shared-ip: pihole-dns
+    metallb.io/loadBalancerIPs: 192.168.0.201
 spec:
   type: LoadBalancer
   ports:

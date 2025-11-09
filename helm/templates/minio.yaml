@@ -6,6 +6,7 @@ metadata:
   labels:
     app: minio
   annotations:
+    "metallb.io/loadBalancerIPs": 192.168.0.204
 spec:
   type: LoadBalancer
   ports:
