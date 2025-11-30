@@ -131,7 +131,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: jellyseer
-          image: fallenbagel/jellyseerr:develop
+          image: ghcr.io/fallenbagel/jellyseerr:latest
           ports:
             - containerPort: 5055
               name: web
