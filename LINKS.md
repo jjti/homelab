@@ -2,13 +2,14 @@
 
 | Service   | URL                          | Pwd                                                     |
 | --------- | ---------------------------- | ------------------------------------------------------- |
+| Router    | http://192.168.0.1           |
 | Headlamp  | http://192.168.0.137:30000   | `kubectl create token headlamp --namespace kube-system` |
 | Pi-hole   | http://192.168.0.201/admin/  | `op read op://Private/pihole/password`                  |
 | MinIO     | http://192.168.0.204         |
 | Jellyfin  | http://192.168.0.200         |
 | Jellyseer | http://192.168.0.203         |
-| Sonarr    | http://192.168.0.137/sonarr  |
-| Radarr    | http://192.168.0.137/radarr  |
+| Sonarr    | http://192.168.0.206:8989         |
+| Radarr    | http://192.168.0.205:7878         |
 | Sabnzdb   | http://192.168.0.137/sabnzbd |                                                         |
 
 ## K8s context
