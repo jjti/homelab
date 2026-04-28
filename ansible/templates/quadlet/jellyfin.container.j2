@@ -1,0 +1,23 @@
+[Unit]
+Description=Jellyfin
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/jellyfin:latest
+ContainerName=jellyfin
+Network=arr.network
+PublishPort=8096:8096
+Environment=PUID=1000 PGID=1000 TZ=America/New_York ROC_ENABLE_PRE_VEGA=1
+Volume={{ infra_dir }}/arr/config/jellyfin:/config:z
+Volume={{ infra_dir }}/arr/cache/jellyfin:/cache:z
+Volume={{ infra_dir }}/arr/media/tv:/media1/tv:z
+Volume={{ infra_dir }}/arr/media/movies:/media2/movies:z
+AddDevice=/dev/dri:/dev/dri
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

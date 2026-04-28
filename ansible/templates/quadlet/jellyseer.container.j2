@@ -1,0 +1,19 @@
+[Unit]
+Description=Jellyseerr
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/fallenbagel/jellyseerr:latest
+ContainerName=jellyseer
+Network=arr.network
+PublishPort=5055:5055
+Environment=PUID=1000 PGID=1000 TZ=America/New_York LOG_LEVEL=debug
+Volume={{ infra_dir }}/arr/config/jellyseer:/app/config:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

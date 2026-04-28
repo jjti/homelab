@@ -1,0 +1,84 @@
+---
+- name: Bootstrap bazz (rootless quadlet homelab)
+  hosts: homelab
+  gather_facts: true
+
+  vars:
+    quadlet_dir: '{{ ansible_facts["env"]["HOME"] }}/.config/containers/systemd'
+    user_runtime_env:
+      XDG_RUNTIME_DIR: '/run/user/{{ ansible_facts["user_uid"] }}'
+      DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/{{ ansible_facts["user_uid"] }}/bus'
+    services:
+      - jellyfin
+      - jellyseer
+      - sonarr
+      - radarr
+      - bazarr
+      - sabnzbd
+      - recyclarr
+
+  tasks:
+    - name: Create infra dirs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ infra_dir }}"
+        - "{{ infra_dir }}/arr"
+        - "{{ infra_dir }}/arr/config/jellyfin"
+        - "{{ infra_dir }}/arr/config/jellyseer"
+        - "{{ infra_dir }}/arr/config/sonarr"
+        - "{{ infra_dir }}/arr/config/radarr"
+        - "{{ infra_dir }}/arr/config/bazarr"
+        - "{{ infra_dir }}/arr/config/sabnzbd"
+        - "{{ infra_dir }}/arr/config/recyclarr"
+        - "{{ infra_dir }}/arr/cache/jellyfin"
+        - "{{ infra_dir }}/arr/downloads"
+        - "{{ infra_dir }}/arr/media/tv"
+        - "{{ infra_dir }}/arr/media/movies"
+        - "{{ quadlet_dir }}"
+
+    - name: Render recyclarr config
+      ansible.builtin.template:
+        src: ../templates/recyclarr.yml.j2
+        dest: "{{ infra_dir }}/arr/config/recyclarr/recyclarr.yml"
+        mode: "0644"
+
+    - name: Render recyclarr env file
+      ansible.builtin.template:
+        src: ../templates/recyclarr.env.j2
+        dest: "{{ infra_dir }}/arr/recyclarr.env"
+        mode: "0600"
+        force: false  # don't clobber API keys once filled in
+
+    - name: Render quadlet network unit
+      ansible.builtin.template:
+        src: ../templates/quadlet/arr.network.j2
+        dest: "{{ quadlet_dir }}/arr.network"
+        mode: "0644"
+      notify: daemon-reload
+
+    - name: Render quadlet container units
+      ansible.builtin.template:
+        src: "../templates/quadlet/{{ item }}.container.j2"
+        dest: "{{ quadlet_dir }}/{{ item }}.container"
+        mode: "0644"
+      loop: "{{ services }}"
+      notify: daemon-reload
+
+    - name: Apply pending unit changes
+      ansible.builtin.meta: flush_handlers
+
+    - name: Start quadlet services
+      ansible.builtin.command:
+        cmd: "systemctl --user start {{ item }}.service"
+      environment: "{{ user_runtime_env }}"
+      loop: "{{ services }}"
+      changed_when: false
+
+  handlers:
+    - name: daemon-reload
+      ansible.builtin.command:
+        cmd: systemctl --user daemon-reload
+      environment: "{{ user_runtime_env }}"

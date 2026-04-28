@@ -1,10 +1,7 @@
-ser: &ser
+homelab:
   hosts:
-    ser5-1:
-      ansible_host: 192.168.0.137
-    ser5-2:
-      ansible_host: 192.168.0.138
-    ser5-3:
-      ansible_host: 192.168.0.139
+    bazz:
+      ansible_host: bazzite
   vars:
     ansible_user: josh
+    infra_dir: /home/josh/infra

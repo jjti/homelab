@@ -1,0 +1,21 @@
+[Unit]
+Description=Sonarr
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/sonarr:latest
+ContainerName=sonarr
+Network=arr.network
+PublishPort=8989:8989
+Environment=PUID=1000 PGID=1000 TZ=America/New_York
+Volume={{ infra_dir }}/arr/config/sonarr:/config:Z
+Volume={{ infra_dir }}/arr/downloads:/downloads:z
+Volume={{ infra_dir }}/arr/media/tv:/tv:z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

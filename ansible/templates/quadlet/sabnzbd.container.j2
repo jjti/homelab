@@ -1,0 +1,21 @@
+[Unit]
+Description=SABnzbd
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/sabnzbd:latest
+ContainerName=sabnzbd
+Network=arr.network
+PublishPort=8080:8080
+PublishPort=6881:6881
+Environment=PUID=1000 PGID=1000 TZ=America/New_York
+Volume={{ infra_dir }}/arr/config/sabnzbd:/config:Z
+Volume={{ infra_dir }}/arr/downloads:/downloads:z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

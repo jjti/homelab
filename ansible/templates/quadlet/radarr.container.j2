@@ -1,0 +1,21 @@
+[Unit]
+Description=Radarr
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/radarr:latest
+ContainerName=radarr
+Network=arr.network
+PublishPort=7878:7878
+Environment=PUID=1000 PGID=1000 TZ=America/New_York
+Volume={{ infra_dir }}/arr/config/radarr:/config:Z
+Volume={{ infra_dir }}/arr/downloads:/downloads:z
+Volume={{ infra_dir }}/arr/media/movies:/movies:z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

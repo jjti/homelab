@@ -1,0 +1,20 @@
+[Unit]
+Description=Recyclarr (TRaSH guides sync)
+Wants=network-online.target
+After=network-online.target sonarr.service radarr.service
+
+[Container]
+Image=ghcr.io/recyclarr/recyclarr:latest
+ContainerName=recyclarr
+Network=arr.network
+User=1000:1000
+EnvironmentFile={{ infra_dir }}/arr/recyclarr.env
+Environment=TZ=America/New_York
+Volume={{ infra_dir }}/arr/config/recyclarr:/config:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

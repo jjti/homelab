@@ -1,0 +1,22 @@
+[Unit]
+Description=Bazarr
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/bazarr:latest
+ContainerName=bazarr
+Network=arr.network
+PublishPort=6767:6767
+Environment=PUID=1000 PGID=1000 TZ=America/New_York UMASK=002
+Volume={{ infra_dir }}/arr/config/bazarr:/config:Z
+Volume={{ infra_dir }}/arr/downloads:/data:z
+Volume={{ infra_dir }}/arr/media/tv:/tv:z
+Volume={{ infra_dir }}/arr/media/movies:/movies:z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
