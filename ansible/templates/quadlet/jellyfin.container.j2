@@ -9,11 +9,16 @@ ContainerName=jellyfin
 Network=arr.network
 PublishPort=8096:8096
 Environment=PUID=1000 PGID=1000 TZ=America/New_York
+# /config is chowned to abc (PUID/PGID) by the linuxserver init at startup.
+# /cache is not — we chown the host dir to the right subuid via `podman unshare` (see playbook).
 Volume={{ infra_dir }}/arr/config/jellyfin:/config:z
 Volume={{ infra_dir }}/arr/cache/jellyfin:/cache:z
-Volume={{ infra_dir }}/arr/media/tv:/media1/tv:z
-Volume={{ infra_dir }}/arr/media/movies:/media2/movies:z
+Volume={{ infra_dir }}/arr/media/tv:/media1/tv:z,ro
+Volume={{ infra_dir }}/arr/media/movies:/media2/movies:z,ro
 AddDevice=/dev/dri:/dev/dri
+# Pass the rootless user's supplementary groups (render, video) into the
+# container so Jellyfin can actually open /dev/dri/renderD128 for VAAPI.
+GroupAdd=keep-groups
 
 [Service]
 Restart=on-failure

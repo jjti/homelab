@@ -7,6 +7,7 @@ deps:
     ansible-galaxy collection install ansible.utils ansible.posix community.docker community.general
 
 # Single-host docker setup on bazz (bazzite). Replaces the old k3s cluster.
+# -K prompts for the remote sudo password (needed for the host-side tailscale tasks).
 bazz:
     OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES \
-        ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/bazz.yaml
+        ansible-playbook -i ./ansible/hosts.yaml ./ansible/tasks/bazz.yaml -K

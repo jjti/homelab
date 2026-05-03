@@ -1,0 +1,23 @@
+[Unit]
+Description=Tailscale serve sidecar ({{ item.name }}) -> {{ item.upstream }}
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/tailscale/tailscale:latest
+ContainerName=tailscale-{{ item.name }}
+Network=arr.network
+Environment=TS_USERSPACE=true
+Environment=TS_HOSTNAME={{ item.name }}
+Environment=TS_STATE_DIR=/var/lib/tailscale
+Environment=TS_SERVE_CONFIG=/config/serve.json
+EnvironmentFile={{ infra_dir }}/arr/tailscale.env
+Volume={{ infra_dir }}/arr/tailscale/{{ item.name }}/state:/var/lib/tailscale:Z
+Volume={{ infra_dir }}/arr/tailscale/{{ item.name }}/config:/config:Z,ro
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

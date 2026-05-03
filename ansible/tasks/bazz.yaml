@@ -16,13 +16,29 @@
       - bazarr
       - sabnzbd
       - recyclarr
+      - pihole
+    # bazz's LAN IP. Pi-hole publishes 53/53/8053 on this address only, so
+    # clients point their DNS at this IP. Reserve it on the router (DHCP
+    # reservation by MAC) to keep it stable.
+    pihole_host_ip: 192.168.0.42
+    # Host-side `tailscale serve` ingress: kernel TUN, full speed.
+    # Use this for bandwidth-heavy services (e.g. Jellyfin streaming).
+    tailscale_host_serves:
+      - upstream: http://localhost:8096
+        https_port: 443
+        funnel: false
+    # Sidecar `tailscale serve` ingress: userspace, slower but isolates each
+    # service onto its own MagicDNS name. Fine for low-traffic web UIs.
+    tailscale_sidecar_serves:
+      - name: download
+        upstream: http://jellyseer:5055
+        funnel: false
 
   tasks:
     - name: Create infra dirs
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
-        mode: "0755"
       loop:
         - "{{ infra_dir }}"
         - "{{ infra_dir }}/arr"
@@ -37,7 +53,32 @@
         - "{{ infra_dir }}/arr/downloads"
         - "{{ infra_dir }}/arr/media/tv"
         - "{{ infra_dir }}/arr/media/movies"
+        - "{{ infra_dir }}/pihole"
+        - "{{ infra_dir }}/pihole/etc-pihole"
+        - "{{ infra_dir }}/pihole/etc-dnsmasq.d"
         - "{{ quadlet_dir }}"
+
+    - name: Create tailscale sidecar dirs
+      ansible.builtin.file:
+        path: "{{ infra_dir }}/arr/tailscale/{{ item.0.name }}/{{ item.1 }}"
+        state: directory
+      loop: "{{ tailscale_sidecar_serves | product(['state', 'config']) | list }}"
+
+    - name: Render tailscale serve configs
+      ansible.builtin.template:
+        src: ../templates/tailscale-serve.json.j2
+        dest: "{{ infra_dir }}/arr/tailscale/{{ item.name }}/config/serve.json"
+        mode: "0644"
+      loop: "{{ tailscale_sidecar_serves }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Render tailscale auth env file
+      ansible.builtin.template:
+        src: ../templates/tailscale.env.j2
+        dest: "{{ infra_dir }}/arr/tailscale.env"
+        mode: "0600"
+        force: false  # don't clobber the real auth key once filled in
 
     - name: Render recyclarr config
       ansible.builtin.template:
@@ -51,6 +92,24 @@
         dest: "{{ infra_dir }}/arr/recyclarr.env"
         mode: "0600"
         force: false  # don't clobber API keys once filled in
+
+    - name: Render pihole env file
+      ansible.builtin.template:
+        src: ../templates/pihole.env.j2
+        dest: "{{ infra_dir }}/pihole/pihole.env"
+        mode: "0600"
+        force: false  # don't clobber the admin password once set
+
+    # Pi-hole publishes on :53, which is below the rootless cutoff (1024).
+    # Lower the unprivileged-port floor so the rootless quadlet can bind it.
+    - name: Allow rootless containers to bind privileged port 53
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_unprivileged_port_start
+        value: "53"
+        sysctl_file: /etc/sysctl.d/99-rootless-pihole.conf
+        state: present
+        reload: true
+      become: true
 
     - name: Render quadlet network unit
       ansible.builtin.template:
@@ -67,6 +126,26 @@
       loop: "{{ services }}"
       notify: daemon-reload
 
+    - name: Render tailscale sidecar quadlet container units
+      ansible.builtin.template:
+        src: ../templates/quadlet/tailscale.container.j2
+        dest: "{{ quadlet_dir }}/tailscale-{{ item.name }}.container"
+        mode: "0644"
+      loop: "{{ tailscale_sidecar_serves }}"
+      loop_control:
+        label: "{{ item.name }}"
+      notify: daemon-reload
+
+    - name: Chown jellyfin cache dir for the in-container PUID (rootless subuid)
+      # The linuxserver image runs jellyfin as abc (PUID=1000). In rootless
+      # podman, that uid maps to a high subuid on the host, not to josh:1000.
+      # `podman unshare` runs chown inside the user namespace so 1000:1000
+      # resolves to the correct host subuid.
+      ansible.builtin.command:
+        cmd: "podman unshare chown -R 1000:1000 {{ infra_dir }}/arr/cache/jellyfin"
+      environment: "{{ user_runtime_env }}"
+      changed_when: false
+
     - name: Apply pending unit changes
       ansible.builtin.meta: flush_handlers
 
@@ -76,6 +155,57 @@
       environment: "{{ user_runtime_env }}"
       loop: "{{ services }}"
       changed_when: false
+
+    - name: Start tailscale sidecar services
+      ansible.builtin.command:
+        cmd: "systemctl --user start tailscale-{{ item.name }}.service"
+      environment: "{{ user_runtime_env }}"
+      loop: "{{ tailscale_sidecar_serves }}"
+      loop_control:
+        label: "{{ item.name }}"
+      changed_when: false
+
+    - name: Ensure tailscaled is enabled and running on host
+      ansible.builtin.systemd:
+        name: tailscaled
+        state: started
+        enabled: true
+      become: true
+
+    - name: Read tailscale auth status
+      ansible.builtin.command: tailscale status --json
+      register: ts_status
+      changed_when: false
+      failed_when: false
+      become: true
+
+    - name: Fail if tailscale is not authenticated
+      ansible.builtin.fail:
+        msg: |
+          Tailscale is not logged in on the host. Run once:
+            sudo tailscale up
+          then re-run this playbook.
+      when: ts_status.rc != 0 or (ts_status.stdout | from_json).BackendState != "Running"
+
+    - name: Configure host tailscale serve (tailnet-only)
+      ansible.builtin.command:
+        cmd: "tailscale serve --bg --https={{ item.https_port }} {{ item.upstream }}"
+      loop: "{{ tailscale_host_serves }}"
+      loop_control:
+        label: "{{ item.upstream }} -> :{{ item.https_port }}"
+      when: not item.funnel
+      changed_when: false
+      become: true
+
+    - name: Configure host tailscale funnel (public)
+      ansible.builtin.command:
+        cmd: "tailscale funnel --bg --https={{ item.https_port }} {{ item.upstream }}"
+      loop: "{{ tailscale_host_serves }}"
+      loop_control:
+        label: "{{ item.upstream }} -> :{{ item.https_port }}"
+      when: item.funnel
+      changed_when: false
+      become: true
 
   handlers:
     - name: daemon-reload
