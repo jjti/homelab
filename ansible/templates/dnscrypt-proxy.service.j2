@@ -1,0 +1,35 @@
+[Unit]
+Description=dnscrypt-proxy DoH client (upstream for pi-hole)
+Documentation=https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/dnscrypt-proxy -config /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+DynamicUser=yes
+StateDirectory=dnscrypt-proxy
+CacheDirectory=dnscrypt-proxy
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

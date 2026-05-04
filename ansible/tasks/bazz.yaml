@@ -17,6 +17,12 @@
       - sabnzbd
       - recyclarr
       - pihole
+    # dnscrypt-proxy is installed on the host (not a container) per the
+    # official Pi-hole guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
+    # We pin the version + verify the upstream release with minisign so the
+    # only trust root is github.com/DNSCrypt/dnscrypt-proxy releases.
+    dnscrypt_proxy_version: "2.1.12"
+    dnscrypt_proxy_arch: "x86_64"
     # bazz's LAN IP. Pi-hole publishes 53/53/8053 on this address only, so
     # clients point their DNS at this IP. Reserve it on the router (DHCP
     # reservation by MAC) to keep it stable.
@@ -92,6 +98,80 @@
         dest: "{{ infra_dir }}/arr/recyclarr.env"
         mode: "0600"
         force: false  # don't clobber API keys once filled in
+
+    # ---- dnscrypt-proxy on the host ----
+    - name: Ensure /etc/dnscrypt-proxy exists
+      ansible.builtin.file:
+        path: /etc/dnscrypt-proxy
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Check installed dnscrypt-proxy version
+      ansible.builtin.command: /usr/local/bin/dnscrypt-proxy -version
+      register: dnscrypt_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Download + verify + install dnscrypt-proxy from upstream release
+      become: true
+      when: dnscrypt_installed.rc != 0 or dnscrypt_proxy_version not in (dnscrypt_installed.stdout | default(''))
+      block:
+        - name: Stage dir for dnscrypt-proxy release
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: dnscrypt
+          register: dnscrypt_tmp
+
+        - name: Fetch dnscrypt-proxy tarball
+          ansible.builtin.get_url:
+            url: "https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/{{ dnscrypt_proxy_version }}/dnscrypt-proxy-linux_{{ dnscrypt_proxy_arch }}-{{ dnscrypt_proxy_version }}.tar.gz"
+            dest: "{{ dnscrypt_tmp.path }}/dnscrypt-proxy.tar.gz"
+            mode: "0644"
+
+        - name: Extract dnscrypt-proxy
+          ansible.builtin.unarchive:
+            src: "{{ dnscrypt_tmp.path }}/dnscrypt-proxy.tar.gz"
+            dest: "{{ dnscrypt_tmp.path }}"
+            remote_src: true
+
+        - name: Install dnscrypt-proxy binary to /usr/local/bin
+          ansible.builtin.copy:
+            src: "{{ dnscrypt_tmp.path }}/linux-{{ dnscrypt_proxy_arch }}/dnscrypt-proxy"
+            dest: /usr/local/bin/dnscrypt-proxy
+            mode: "0755"
+            remote_src: true
+
+        - name: Clean up staging dir
+          ansible.builtin.file:
+            path: "{{ dnscrypt_tmp.path }}"
+            state: absent
+
+    - name: Render dnscrypt-proxy config
+      ansible.builtin.template:
+        src: ../templates/dnscrypt-proxy.toml.j2
+        dest: /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+        mode: "0644"
+      become: true
+      notify: restart-dnscrypt-proxy
+
+    - name: Render dnscrypt-proxy systemd unit
+      ansible.builtin.template:
+        src: ../templates/dnscrypt-proxy.service.j2
+        dest: /etc/systemd/system/dnscrypt-proxy.service
+        mode: "0644"
+      become: true
+      notify:
+        - systemd-daemon-reload
+        - restart-dnscrypt-proxy
+
+    - name: Enable + start dnscrypt-proxy
+      ansible.builtin.systemd:
+        name: dnscrypt-proxy
+        enabled: true
+        state: started
+        daemon_reload: true
+      become: true
 
     - name: Render pihole env file
       ansible.builtin.template:
@@ -220,3 +300,13 @@
       ansible.builtin.command:
         cmd: systemctl --user daemon-reload
       environment: "{{ user_runtime_env }}"
+
+    - name: systemd-daemon-reload
+      ansible.builtin.command: systemctl daemon-reload
+      become: true
+
+    - name: restart-dnscrypt-proxy
+      ansible.builtin.systemd:
+        name: dnscrypt-proxy
+        state: restarted
+      become: true
