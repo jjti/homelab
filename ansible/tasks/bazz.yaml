@@ -136,14 +136,22 @@
         label: "{{ item.name }}"
       notify: daemon-reload
 
-    - name: Chown jellyfin cache dir for the in-container PUID (rootless subuid)
+    - name: Chown jellyfin cache + config dirs for the in-container PUID (rootless subuid)
       # The linuxserver image runs jellyfin as abc (PUID=1000). In rootless
       # podman, that uid maps to a high subuid on the host, not to josh:1000.
       # `podman unshare` runs chown inside the user namespace so 1000:1000
       # resolves to the correct host subuid.
+      #
+      # /config: lscr's init only chowns the top of /config at startup, not
+      # recursively. Subdirs created later (e.g. data/metadata/library) end up
+      # owned by other uids and image/metadata writes fail with
+      # UnauthorizedAccessException. Recursive chown fixes it.
       ansible.builtin.command:
-        cmd: "podman unshare chown -R 1000:1000 {{ infra_dir }}/arr/cache/jellyfin"
+        cmd: "podman unshare chown -R 1000:1000 {{ item }}"
       environment: "{{ user_runtime_env }}"
+      loop:
+        - "{{ infra_dir }}/arr/cache/jellyfin"
+        - "{{ infra_dir }}/arr/config/jellyfin"
       changed_when: false
 
     - name: Apply pending unit changes
