@@ -9,6 +9,8 @@ ContainerName=sonarr
 Network=arr.network
 PublishPort=8989:8989
 Environment=PUID=1000 PGID=1000 TZ=America/New_York
+Environment=DOCKER_MODS=linuxserver/mods:radarr-striptracks
+Environment=STRIPTRACKS_ARGS=--audio :org:eng --subs :eng
 Volume={{ infra_dir }}/arr/config/sonarr:/config:Z
 Volume={{ infra_dir }}/arr/downloads:/downloads:z
 Volume={{ infra_dir }}/arr/media/tv:/tv:z

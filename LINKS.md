@@ -1,7 +1,7 @@
 # Links
 
-| Service    | URL                             |
-| ---------- | ------------------------------- |
+| Service    | URL                               |
+| ---------- | --------------------------------- |
 | Jellyfin   | <http://192.168.0.42:8096>        |
 | Jellyseerr | <http://192.168.0.42:5055>        |
 | Sonarr     | <http://192.168.0.42:8989>        |
@@ -10,4 +10,4 @@
 | SABnzbd    | <http://192.168.0.42:8080>        |
 | Pi-hole    | <http://192.168.0.42:8053/admin/> |
 | TP-Link    | <http://192.168.0.1>              |
-| Recyclarr  | (CLI only — no UI)              |
+| Recyclarr  | (CLI only — no UI)                |

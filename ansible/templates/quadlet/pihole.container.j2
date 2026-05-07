@@ -15,6 +15,10 @@ PublishPort={{ pihole_host_ip }}:53:53/udp
 PublishPort={{ pihole_host_ip }}:8053:80/tcp
 Environment=TZ=America/New_York
 Environment=FTLCONF_dns_listeningMode=all
+# Allow iCloud Private Relay (iPhones otherwise show "Privacy Warning" that
+# Private Relay is blocked by this network). v6 successor to the v5
+# BLOCK_ICLOUD_PR=false flag in /etc/pihole/pihole-FTL.conf.
+Environment=FTLCONF_dns_specialDomains_iCloudPrivateRelay=false
 EnvironmentFile={{ infra_dir }}/pihole/pihole.env
 Volume={{ infra_dir }}/pihole/etc-pihole:/etc/pihole:Z
 Volume={{ infra_dir }}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d:Z
