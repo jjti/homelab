@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
 ################################################################################
 ## TRaSH Guides config
-##  - Sonarr: WEB-1080p
-##  - Radarr: HD Bluray + WEB
+##  - Sonarr: WEB-1080p + HDR Formats
+##  - Radarr: HD Bluray + WEB + HDR Formats
 ################################################################################
 
 sonarr:
@@ -30,6 +30,18 @@ sonarr:
           select:
             - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
             # - 9b64dff695c2115facf1b6ea59c9bd07  # x265 (no HDR/DV)
+        - trash_id: 7e1724c5da59e7474803ad25be98f6a3  # [HDR Formats] HDR
+          select:
+            - 505d871304820ba7106b693be6fe4a9e  # HDR
+        - trash_id: d776a1ea912a117d66d83b880ff2055d  # [HDR Formats] DV (w/o HDR fallback)
+          select:
+            - 9b27ab6498ec0f31a3353992e19434ca  # DV (w/o HDR fallback)
+        # - trash_id: 7d366c213e5c23a052b157356fac1921  # [HDR Formats] HDR10+ Boost
+        #   select:
+        #     - 0c4b99df9206d2cfac3c05ab897dd62a  # HDR10+ Boost
+        # - trash_id: e0b2774083df4265f25c9e5bc6c80940  # [HDR Formats] DV Boost
+        #   select:
+        #     - 7c3a61a9c6cb04f52f1544be6d44a026  # DV Boost
         - trash_id: 85fae4a2294965b75710ef2989c850eb  # [Streaming Services] HD/UHD boost
           select:
             - 218e93e5702f44a68ad9e3c6ba87d2f0  # HD Streaming Boost
@@ -82,6 +94,18 @@ radarr:
           select:
             - dc98083864ea246d05a42df0d05f81cc  # x265 (HD)
             # - 839bea857ed2c0a8e084f3cbdbd65ecb  # x265 (no HDR/DV)
+        - trash_id: ef20e67b95a381fb3bc6d1f06ea24f46  # [HDR Formats] HDR
+          select:
+            - 493b6d1dbec3c3364c59d7607f7e3405  # HDR
+        - trash_id: 7fc2751eef7e6bdc70b74136e5e35c76  # [HDR Formats] DV (w/o HDR fallback)
+          select:
+            - 923b6abef9b17f937fab56cfcf89e1f1  # DV (w/o HDR fallback)
+        # - trash_id: b29413a7487478fe98228ce79e5689e4  # [HDR Formats] HDR10+ Boost
+        #   select:
+        #     - caa37d0df9c348912df1fb1d88f9273a  # HDR10+ Boost
+        # - trash_id: 1616617ab3a14397a2b2321bcbda44d1  # [HDR Formats] DV Boost
+        #   select:
+        #     - b337d6812e06c200ec9a2d3cfa9d20a7  # DV Boost
         - trash_id: a3ac6af01d78e4f21fcb75f601ac96df  # [Unwanted] Unwanted Formats
           select:
             - b8cd450cbfa689c0259a01d9e29ba3d6  # 3D

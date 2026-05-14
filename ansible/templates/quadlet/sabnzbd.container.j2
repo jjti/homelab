@@ -1,14 +1,18 @@
 [Unit]
 Description=SABnzbd
 Wants=network-online.target
-After=network-online.target
+After=network-online.target gluetun.service
+# BindsTo (not just Requires) so sabnzbd stops whenever gluetun stops.
+# Without this, sabnzbd keeps gluetun's netns busy, and podman can't recreate
+# the gluetun container on restart ("has dependent containers" error).
+BindsTo=gluetun.service
 
 [Container]
 Image=lscr.io/linuxserver/sabnzbd:latest
 ContainerName=sabnzbd
-Network=arr.network
-PublishPort=8080:8080
-PublishPort=6881:6881
+# Share gluetun's netns so all egress goes through ProtonVPN.
+# Ports are published on the gluetun unit, not here.
+Network=container:gluetun
 Environment=PUID=1000 PGID=1000 TZ=America/New_York
 Volume={{ infra_dir }}/arr/config/sabnzbd:/config:Z
 Volume={{ infra_dir }}/arr/downloads:/downloads:z

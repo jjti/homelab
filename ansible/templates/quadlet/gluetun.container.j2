@@ -1,0 +1,34 @@
+[Unit]
+Description=Gluetun VPN gateway (ProtonVPN WireGuard)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/qdm12/gluetun:latest
+ContainerName=gluetun
+# Owns the netns that sabnzbd joins via `Network=container:gluetun`.
+# Register sabnzbd's old name as a network alias so radarr/sonarr's existing
+# `http://sabnzbd:8080` config keeps resolving without UI changes.
+Network=arr.network
+NetworkAlias=sabnzbd
+# Ports for containers sharing this netns (sabnzbd today).
+PublishPort=8080:8080
+PublishPort=6881:6881
+AddCapability=NET_ADMIN
+AddDevice=/dev/net/tun
+EnvironmentFile={{ infra_dir }}/gluetun.env
+# "custom" provider mode bypasses gluetun's built-in Proton catalog and dials
+# a specific endpoint we pin. Lets us pick any Proton server (incl. ones not
+# in gluetun's bundled list) by pasting the endpoint + peer pubkey from
+# Proton's WireGuard config download. Endpoint/pubkey live in gluetun.env.
+Environment=VPN_SERVICE_PROVIDER=custom
+Environment=VPN_TYPE=wireguard
+Environment=TZ=America/New_York
+Volume={{ infra_dir }}/gluetun:/gluetun:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

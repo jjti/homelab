@@ -14,6 +14,7 @@
       - sonarr
       - radarr
       - bazarr
+      - gluetun
       - sabnzbd
       - recyclarr
       - pihole
@@ -62,6 +63,7 @@
         - "{{ infra_dir }}/pihole"
         - "{{ infra_dir }}/pihole/etc-pihole"
         - "{{ infra_dir }}/pihole/etc-dnsmasq.d"
+        - "{{ infra_dir }}/gluetun"
         - "{{ quadlet_dir }}"
 
     - name: Create tailscale sidecar dirs
@@ -98,6 +100,13 @@
         dest: "{{ infra_dir }}/arr/recyclarr.env"
         mode: "0600"
         force: false  # don't clobber API keys once filled in
+
+    - name: Render gluetun env file
+      ansible.builtin.template:
+        src: ../templates/gluetun.env.j2
+        dest: "{{ infra_dir }}/gluetun.env"
+        mode: "0600"
+        force: false  # don't clobber ProtonVPN WG key once filled in
 
     # ---- dnscrypt-proxy on the host ----
     - name: Ensure /etc/dnscrypt-proxy exists
@@ -190,6 +199,26 @@
         state: present
         reload: true
       become: true
+
+    # gluetun (rootless) needs to open /dev/net/tun, which is 0660 root:root
+    # by default. AddDevice= passes the node in but doesn't grant access to
+    # the rootless uid. Make the device world-rw via a udev rule.
+    - name: Allow rootless containers to open /dev/net/tun
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/51-tun.rules
+        content: 'KERNEL=="tun", MODE="0666", OPTIONS+="static_node=net/tun"'
+        mode: "0644"
+      become: true
+      register: tun_udev_rule
+
+    - name: Reload udev rules + retrigger tun
+      ansible.builtin.command: "{{ item }}"
+      become: true
+      loop:
+        - udevadm control --reload-rules
+        - udevadm trigger /dev/net/tun
+      when: tun_udev_rule.changed
+      changed_when: false
 
     - name: Render quadlet network unit
       ansible.builtin.template:
