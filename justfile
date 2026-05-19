@@ -1,5 +1,4 @@
-default:
-    @just --list
+default: bazz
 
 # Install ansible + 1password CLI on the mac, then ansible collections.
 deps:
