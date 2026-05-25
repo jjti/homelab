@@ -15,9 +15,3 @@ The main reason I opt'ed the SER5 Max was they're cheap (~$350 each), have low p
 ## Access
 
 Tailscale. TODO: more details. For the homelab use-case it's better than Cloudflare Tunnels and sshuttle.
-
-## Storage
-
-### MinIO
-
-MinIO is a distributed storage engine with an S3-compatible interface. It means I can write data from one node into MinIO and access it from applications running on other nodes, and have some redundancy during deployments or restarts of any one of the nodes.

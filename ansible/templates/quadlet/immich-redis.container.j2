@@ -1,0 +1,17 @@
+[Unit]
+Description=Immich Redis
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/redis:6.2-alpine
+ContainerName=immich-redis
+Network=arr.network
+Volume={{ infra_dir }}/immich/redis:/data:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

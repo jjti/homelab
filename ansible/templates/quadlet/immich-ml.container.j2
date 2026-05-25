@@ -1,0 +1,23 @@
+[Unit]
+Description=Immich machine learning
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+# ROCm build for AMD GPU inference (face detection, CLIP embeddings, OCR).
+# Image is ~8GB. Bundles ROCm 7.2 which officially supports RDNA 4 (gfx1201,
+# RX 9070). Falls back to CPU if /dev/kfd isn't accessible.
+Image=ghcr.io/immich-app/immich-machine-learning:release-rocm
+ContainerName=immich-ml
+Network=arr.network
+Volume={{ infra_dir }}/immich/ml-cache:/cache:Z
+AddDevice=/dev/dri:/dev/dri
+AddDevice=/dev/kfd:/dev/kfd
+GroupAdd=keep-groups
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly Immich backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+# Run after boot if the machine was off at 3am.
+Persistent=true
+# Spread load on the off chance other systems share this schedule.
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+# Terraform state contains the IAM secret access key in plaintext. Keep local.
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+backend.hcl
+crash.log
+crash.*.log

@@ -1,0 +1,34 @@
+[Unit]
+Description=Immich server
+Wants=network-online.target
+After=network-online.target
+# Wait for the photos disk + dependencies before starting. Restart=on-failure
+# handles the gap between postgres being "active" and "actually accepting
+# connections" — the server retries until the DB is ready.
+Requires=immich-postgres.service immich-redis.service
+After=immich-postgres.service immich-redis.service immich-ml.service mnt-photos.mount
+
+[Container]
+Image=ghcr.io/immich-app/immich-server:release
+ContainerName=immich-server
+Network=arr.network
+PublishPort=2283:2283
+EnvironmentFile={{ infra_dir }}/immich.env
+Environment=TZ=America/New_York
+Environment=IMMICH_VERSION=release
+Environment=DB_HOSTNAME=immich-postgres
+Environment=REDIS_HOSTNAME=immich-redis
+Environment=IMMICH_MACHINE_LEARNING_URL=http://immich-ml:3003
+Volume=/mnt/photos/immich:/usr/src/app/upload:z
+Volume=/etc/localtime:/etc/localtime:ro
+# VAAPI for video preview transcoding (RX 9070, gfx1201). Set Admin -> Video
+# Transcoding -> Acceleration to VAAPI in the Immich web UI to actually use it.
+AddDevice=/dev/dri:/dev/dri
+GroupAdd=keep-groups
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

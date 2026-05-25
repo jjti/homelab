@@ -1,0 +1,14 @@
+[Unit]
+Description=Immich backup to S3 (pg_dump + rclone sync)
+After=immich-postgres.service immich-server.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/immich-backup.env
+ExecStart=%h/.local/bin/immich-backup.sh
+# Don't auto-restart on failure — the timer fires again tomorrow. A failed run
+# logs to journalctl --user -u immich-backup; check there if something breaks.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

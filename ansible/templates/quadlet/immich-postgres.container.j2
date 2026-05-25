@@ -1,0 +1,21 @@
+[Unit]
+Description=Immich Postgres (vectorchord)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+# Pinned to Immich's custom postgres + vectorchord build. Check current tag
+# at https://immich.app/docs/install/docker-compose before bumping.
+Image=ghcr.io/immich-app/postgres:14-vectorchord0.4.3
+ContainerName=immich-postgres
+Network=arr.network
+EnvironmentFile={{ infra_dir }}/immich.env
+Environment=POSTGRES_INITDB_ARGS=--data-checksums
+Volume={{ infra_dir }}/immich/postgres:/var/lib/postgresql/data:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

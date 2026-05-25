@@ -18,12 +18,19 @@
       - sabnzbd
       - recyclarr
       - pihole
+      - immich-postgres
+      - immich-redis
+      - immich-ml
+      - immich-server
     # dnscrypt-proxy is installed on the host (not a container) per the
     # official Pi-hole guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
     # We pin the version + verify the upstream release with minisign so the
     # only trust root is github.com/DNSCrypt/dnscrypt-proxy releases.
     dnscrypt_proxy_version: "2.1.12"
     dnscrypt_proxy_arch: "x86_64"
+    # rclone for nightly Immich backups to S3 Glacier. Check current at
+    # https://rclone.org/downloads/ before bumping.
+    rclone_version: "1.69.0"
     # bazz's LAN IP. Pi-hole publishes 53/53/8053 on this address only, so
     # clients point their DNS at this IP. Reserve it on the router (DHCP
     # reservation by MAC) to keep it stable.
@@ -39,6 +46,9 @@
     tailscale_sidecar_serves:
       - name: download
         upstream: http://jellyseer:5055
+        funnel: false
+      - name: photos
+        upstream: http://immich-server:2283
         funnel: false
 
   tasks:
@@ -64,7 +74,41 @@
         - "{{ infra_dir }}/pihole/etc-pihole"
         - "{{ infra_dir }}/pihole/etc-dnsmasq.d"
         - "{{ infra_dir }}/gluetun"
+        - "{{ infra_dir }}/immich"
+        - "{{ infra_dir }}/immich/postgres"
+        - "{{ infra_dir }}/immich/redis"
+        - "{{ infra_dir }}/immich/ml-cache"
         - "{{ quadlet_dir }}"
+
+    # USB-attached photos drive. Mounted by label (survives /dev/sdX
+    # reshuffling); nofail + short device timeout so a missing/unplugged
+    # disk doesn't hang boot.
+    - name: Ensure /mnt/photos mount point exists
+      ansible.builtin.file:
+        path: /mnt/photos
+        state: directory
+        owner: josh
+        group: josh
+        mode: "0755"
+      become: true
+
+    - name: Mount photos drive by label
+      ansible.posix.mount:
+        path: /mnt/photos
+        src: LABEL=photos
+        fstype: xfs
+        opts: defaults,nofail,x-systemd.device-timeout=10
+        state: mounted
+      become: true
+
+    - name: Ensure /mnt/photos/immich subdir exists
+      ansible.builtin.file:
+        path: /mnt/photos/immich
+        state: directory
+        owner: josh
+        group: josh
+        mode: "0755"
+      become: true
 
     - name: Create tailscale sidecar dirs
       ansible.builtin.file:
@@ -107,6 +151,13 @@
         dest: "{{ infra_dir }}/gluetun.env"
         mode: "0600"
         force: false  # don't clobber ProtonVPN WG key once filled in
+
+    - name: Render immich env file
+      ansible.builtin.template:
+        src: ../templates/immich.env.j2
+        dest: "{{ infra_dir }}/immich.env"
+        mode: "0600"
+        force: false  # don't clobber DB password once filled in
 
     # ---- dnscrypt-proxy on the host ----
     - name: Ensure /etc/dnscrypt-proxy exists
@@ -154,6 +205,47 @@
         - name: Clean up staging dir
           ansible.builtin.file:
             path: "{{ dnscrypt_tmp.path }}"
+            state: absent
+
+    # ---- rclone on the host (for Immich backups) ----
+    - name: Check installed rclone version
+      ansible.builtin.command: /usr/local/bin/rclone version
+      register: rclone_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Download + install rclone from upstream release
+      become: true
+      when: rclone_installed.rc != 0 or rclone_version not in (rclone_installed.stdout | default(''))
+      block:
+        - name: Stage dir for rclone release
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: rclone
+          register: rclone_tmp
+
+        - name: Fetch rclone zip
+          ansible.builtin.get_url:
+            url: "https://downloads.rclone.org/v{{ rclone_version }}/rclone-v{{ rclone_version }}-linux-amd64.zip"
+            dest: "{{ rclone_tmp.path }}/rclone.zip"
+            mode: "0644"
+
+        - name: Extract rclone
+          ansible.builtin.unarchive:
+            src: "{{ rclone_tmp.path }}/rclone.zip"
+            dest: "{{ rclone_tmp.path }}"
+            remote_src: true
+
+        - name: Install rclone binary to /usr/local/bin
+          ansible.builtin.copy:
+            src: "{{ rclone_tmp.path }}/rclone-v{{ rclone_version }}-linux-amd64/rclone"
+            dest: /usr/local/bin/rclone
+            mode: "0755"
+            remote_src: true
+
+        - name: Clean up staging dir
+          ansible.builtin.file:
+            path: "{{ rclone_tmp.path }}"
             state: absent
 
     - name: Render dnscrypt-proxy config
@@ -263,6 +355,60 @@
         - "{{ infra_dir }}/arr/config/jellyfin"
       changed_when: false
 
+    # ---- Immich backup script + nightly user-mode systemd timer ----
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: '{{ ansible_facts["env"]["HOME"] }}/.local/bin'
+        state: directory
+        mode: "0755"
+
+    - name: Ensure ~/.config/systemd/user exists
+      ansible.builtin.file:
+        path: '{{ ansible_facts["env"]["HOME"] }}/.config/systemd/user'
+        state: directory
+        mode: "0755"
+
+    - name: Render immich-backup script
+      ansible.builtin.template:
+        src: ../templates/immich-backup.sh.j2
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.local/bin/immich-backup.sh'
+        mode: "0755"
+
+    - name: Render immich-backup env file
+      ansible.builtin.template:
+        src: ../templates/immich-backup.env.j2
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.config/immich-backup.env'
+        mode: "0600"
+        force: false  # don't clobber AWS creds once filled in
+
+    - name: Render immich-backup systemd service unit
+      ansible.builtin.template:
+        src: ../templates/immich-backup.service.j2
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.config/systemd/user/immich-backup.service'
+        mode: "0644"
+      notify: daemon-reload
+
+    - name: Render immich-backup systemd timer unit
+      ansible.builtin.template:
+        src: ../templates/immich-backup.timer.j2
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.config/systemd/user/immich-backup.timer'
+        mode: "0644"
+      notify: daemon-reload
+
+    - name: Chown immich data dirs for the in-container UIDs (rootless subuids)
+      # Same trick as the jellyfin chown above. Immich-server + ML run as UID
+      # 1000 inside their images; immich-postgres + redis run as UID 999.
+      # `podman unshare` translates those to the host subuid range.
+      ansible.builtin.command:
+        cmd: "podman unshare chown -R {{ item.uid }}:{{ item.gid }} {{ item.path }}"
+      environment: "{{ user_runtime_env }}"
+      loop:
+        - { uid: 1000, gid: 1000, path: "/mnt/photos/immich" }
+        - { uid: 1000, gid: 1000, path: "{{ infra_dir }}/immich/ml-cache" }
+        - { uid: 999,  gid: 999,  path: "{{ infra_dir }}/immich/postgres" }
+        - { uid: 999,  gid: 999,  path: "{{ infra_dir }}/immich/redis" }
+      changed_when: false
+
     - name: Apply pending unit changes
       ansible.builtin.meta: flush_handlers
 
@@ -271,6 +417,12 @@
         cmd: "systemctl --user start {{ item }}.service"
       environment: "{{ user_runtime_env }}"
       loop: "{{ services }}"
+      changed_when: false
+
+    - name: Enable + start immich-backup nightly timer
+      ansible.builtin.command:
+        cmd: systemctl --user enable --now immich-backup.timer
+      environment: "{{ user_runtime_env }}"
       changed_when: false
 
     - name: Start tailscale sidecar services
