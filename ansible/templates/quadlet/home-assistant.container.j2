@@ -1,0 +1,53 @@
+[Unit]
+Description=Home Assistant
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/home-assistant/home-assistant:stable
+ContainerName=home-assistant
+# Host networking is the upstream-recommended mode: HA needs it for mDNS,
+# SSDP, and DHCP discovery of integrations (Sonos, Cast, Plex, etc.). The
+# UI listens on :8123 directly on the host.
+Network=host
+# Run HA as host josh (UID 1000) instead of container-root, so DBus
+# EXTERNAL auth (which compares the container's getuid() against the host
+# SO_PEERCRED on the bus socket) succeeds. Without this combo, the BT
+# integration hits 'REJECTED: [EXTERNAL]' against BlueZ. /config is
+# josh-owned on the host so file ownership lines up.
+UserNS=keep-id
+User=1000:1000
+# Drop SELinux container_t confinement so HA can connect to the host's
+# system DBus socket (for BlueZ). Bazzite's default container_t silently
+# (dontaudit) denies AF_UNIX connect() to system_dbusd_var_run_t.
+SecurityLabelDisable=true
+# NET_ADMIN + NET_RAW: needed for HA's DHCP integration discovery
+# (aiodhcpwatcher opens an AF_PACKET socket) and BT adapter recovery.
+AddCapability=NET_ADMIN
+AddCapability=NET_RAW
+Environment=TZ=America/New_York
+Volume={{ infra_dir }}/home-assistant:/config
+Volume=/etc/localtime:/etc/localtime:ro
+# Host system DBus, for HA -> BlueZ. Note this still hits the rootless
+# DBus EXTERNAL auth mismatch (container UID 0 vs host SO_PEERCRED 1000)
+# unless paired with a non-root HA user + UserNS=keep-id.
+Volume=/run/dbus:/run/dbus:ro
+# Sonoff Zigbee dongle. The host udev rule (see playbook) matches by
+# VID:PID + product string, sets mode 0666 so the rootless container can
+# open it, and creates /dev/zigbee as a stable symlink to ttyUSBN.
+#
+# The :/dev/zigbee on the right is the *container-side* destination.
+# Without it, podman resolves the host symlink to the underlying ttyUSBN
+# and mounts at that path inside the container — meaning the container
+# sees /dev/ttyUSB0 (unstable) and /dev/zigbee is missing. With the
+# explicit destination, the container always sees /dev/zigbee regardless
+# of which ttyUSBN the host assigned this boot. Use /dev/zigbee in ZHA's
+# "Serial device path".
+AddDevice=/dev/zigbee:/dev/zigbee
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

@@ -11,6 +11,13 @@ Image=ghcr.io/immich-app/immich-machine-learning:release-rocm
 ContainerName=immich-ml
 Network=arr.network
 Volume={{ infra_dir }}/immich/ml-cache:/cache:Z
+# Persist MIOpen / MIGraphX compiled-kernel caches under $HOME/.cache.
+# Without this, every container restart forces ROCm to recompile each
+# ONNX model (face detect, CLIP visual, CLIP text, OCR det+rec) — 5–10
+# minutes of CPU-bound clang/LLVM work before GPU inference kicks in.
+# With the bind mount, compile happens once and is reused on every
+# subsequent start. Host dir must be owned by UID 1000 (container's UID).
+Volume={{ infra_dir }}/immich/ml-kernel-cache:/root/.cache:Z
 AddDevice=/dev/dri:/dev/dri
 AddDevice=/dev/kfd:/dev/kfd
 GroupAdd=keep-groups

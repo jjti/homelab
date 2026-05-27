@@ -22,6 +22,7 @@
       - immich-redis
       - immich-ml
       - immich-server
+      - home-assistant
     # dnscrypt-proxy is installed on the host (not a container) per the
     # official Pi-hole guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
     # We pin the version + verify the upstream release with minisign so the
@@ -78,6 +79,8 @@
         - "{{ infra_dir }}/immich/postgres"
         - "{{ infra_dir }}/immich/redis"
         - "{{ infra_dir }}/immich/ml-cache"
+        - "{{ infra_dir }}/immich/ml-kernel-cache"
+        - "{{ infra_dir }}/home-assistant"
         - "{{ quadlet_dir }}"
 
     # USB-attached photos drive. Mounted by label (survives /dev/sdX
@@ -312,6 +315,61 @@
       when: tun_udev_rule.changed
       changed_when: false
 
+    # Sonoff Zigbee 3.0 USB Dongle Plus V2 (ITead, CP210x UART, VID:PID
+    # 10c4:ea60). Default perms are 0660 root:dialout; rootless podman can't
+    # open it. Set mode 0666 and pin a stable /dev/zigbee symlink so the
+    # quadlet doesn't depend on /dev/ttyUSBN ordering.
+    - name: Allow rootless containers to open the Sonoff Zigbee dongle
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/52-sonoff-zigbee.rules
+        content: |
+          SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{product}=="Sonoff Zigbee 3.0 USB Dongle Plus V2", MODE="0666", SYMLINK+="zigbee"
+        mode: "0644"
+      become: true
+      register: zigbee_udev_rule
+
+    - name: Reload udev rules + retrigger Zigbee dongle
+      ansible.builtin.command: "{{ item }}"
+      become: true
+      loop:
+        - udevadm control --reload-rules
+        - udevadm trigger --subsystem-match=tty
+      when: zigbee_udev_rule.changed
+      changed_when: false
+
+    # ---- Bluetooth stability tweaks ----
+    # Two well-known fixes for flapping/dropouts with USB Bluetooth dongles
+    # on Linux, especially with DualSense + Realtek RTL8761B:
+    #   1. btusb autosuspend: idle adapter gets suspended by USB power
+    #      management, then signal flaps when traffic resumes. Disable it.
+    #   2. L2CAP ERTM: enhanced retransmission mode is known to misbehave
+    #      with Sony controllers. Disabling it improves pair stability.
+    # Both take effect after a reboot (or `modprobe -r/<module>` cycle, but
+    # that would drop any active BT connection).
+    - name: Disable btusb USB autosuspend
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/btusb-noautosuspend.conf
+        content: "options btusb enable_autosuspend=0\n"
+        mode: "0644"
+      become: true
+      register: btusb_modprobe
+
+    - name: Disable Bluetooth ERTM (DualSense stability)
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/bluetooth-noertm.conf
+        content: "options bluetooth disable_ertm=Y\n"
+        mode: "0644"
+      become: true
+      register: bluetooth_modprobe
+
+    - name: Warn that a reboot is needed for BT module options to take effect
+      ansible.builtin.debug:
+        msg: |
+          Bluetooth module options changed (autosuspend / ERTM). Reboot
+          bazz for them to take effect — `modprobe -r` would drop any
+          currently-connected BT device (e.g. the PS5 controller).
+      when: btusb_modprobe.changed or bluetooth_modprobe.changed
+
     - name: Render quadlet network unit
       ansible.builtin.template:
         src: ../templates/quadlet/arr.network.j2
@@ -405,6 +463,7 @@
       loop:
         - { uid: 1000, gid: 1000, path: "/mnt/photos/immich" }
         - { uid: 1000, gid: 1000, path: "{{ infra_dir }}/immich/ml-cache" }
+        - { uid: 1000, gid: 1000, path: "{{ infra_dir }}/immich/ml-kernel-cache" }
         - { uid: 999,  gid: 999,  path: "{{ infra_dir }}/immich/postgres" }
         - { uid: 999,  gid: 999,  path: "{{ infra_dir }}/immich/redis" }
       changed_when: false

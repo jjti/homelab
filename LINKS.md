@@ -9,5 +9,6 @@
 | Bazarr     | <http://192.168.0.42:6767>        |
 | SABnzbd    | <http://192.168.0.42:8080>        |
 | Pi-hole    | <http://192.168.0.42:8053/admin/> |
+| Home Asst. | <http://192.168.0.42:8123>        |
 | TP-Link    | <http://192.168.0.1>              |
 | Recyclarr  | (CLI only — no UI)                |
