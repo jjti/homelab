@@ -32,18 +32,13 @@ Volume=/etc/localtime:/etc/localtime:ro
 # DBus EXTERNAL auth mismatch (container UID 0 vs host SO_PEERCRED 1000)
 # unless paired with a non-root HA user + UserNS=keep-id.
 Volume=/run/dbus:/run/dbus:ro
-# Sonoff Zigbee dongle. The host udev rule (see playbook) matches by
-# VID:PID + product string, sets mode 0666 so the rootless container can
-# open it, and creates /dev/zigbee as a stable symlink to ttyUSBN.
-#
-# The :/dev/zigbee on the right is the *container-side* destination.
-# Without it, podman resolves the host symlink to the underlying ttyUSBN
-# and mounts at that path inside the container — meaning the container
-# sees /dev/ttyUSB0 (unstable) and /dev/zigbee is missing. With the
-# explicit destination, the container always sees /dev/zigbee regardless
-# of which ttyUSBN the host assigned this boot. Use /dev/zigbee in ZHA's
-# "Serial device path".
-AddDevice=/dev/zigbee:/dev/zigbee
+# Zigbee coordinator is a network-attached SMLIGHT SLZB (Z-Stack/znp),
+# reached over TCP at socket://<slzb-ip>:6638 — configured in ZHA, not
+# here. No USB device passthrough is needed. (Previously this passed
+# AddDevice=/dev/zigbee for a USB Sonoff dongle; that dongle was removed
+# when the coordinator moved onto the LAN. Passing a non-existent device
+# makes `podman run` fail with exit 125, so it must stay absent unless a
+# USB radio is reintroduced.)
 
 [Service]
 Restart=on-failure
