@@ -10,5 +10,6 @@
 | SABnzbd    | <http://192.168.0.42:8080>        |
 | Pi-hole    | <http://192.168.0.42:8053/admin/> |
 | Home Asst. | <http://192.168.0.42:8123>        |
-| TP-Link    | <http://192.168.0.1>              |
+| Router    | <http://192.168.0.1>              |
+| Access Point | <http://192.168.0.126> |
 | Recyclarr  | (CLI only — no UI)                |
