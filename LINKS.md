@@ -11,5 +11,5 @@
 | Pi-hole      | <http://192.168.0.42:8053/admin/> |
 | Home Asst.   | <http://192.168.0.42:8123>        |
 | Router       | <http://192.168.0.1>              |
-| Access Point | <http://192.168.0.197> |
+| Access Point | <http://192.168.0.198> |
 | Recyclarr    | (CLI only — no UI)                |
