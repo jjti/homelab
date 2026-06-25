@@ -10,6 +10,7 @@ Network=arr.network
 Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/New_York
+PublishPort=8765:80
 EnvironmentFile={{ infra_dir }}/speedtest-tracker.env
 Volume={{ infra_dir }}/speedtest-tracker:/config:Z
 

@@ -10,6 +10,7 @@ Network=arr.network
 Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/New_York
+PublishPort=8880:80
 # /config holds all smokeping config + RRD data. The linuxserver init
 # creates default General/Probes/Database on first start (if absent), then
 # chowns the whole tree to abc (PUID 1000). We pre-render the Targets file
