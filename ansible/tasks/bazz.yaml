@@ -23,6 +23,8 @@
       - immich-ml
       - immich-server
       - home-assistant
+      - smokeping
+      - speedtest-tracker
     # dnscrypt-proxy is installed on the host (not a container) per the
     # official Pi-hole guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
     # We pin the version + verify the upstream release with minisign so the
@@ -36,6 +38,7 @@
     # clients point their DNS at this IP. Reserve it on the router (DHCP
     # reservation by MAC) to keep it stable.
     pihole_host_ip: 192.168.0.42
+    router_ip: 192.168.0.1
     # Host-side `tailscale serve` ingress: kernel TUN, full speed.
     # Use this for bandwidth-heavy services (e.g. Jellyfin streaming).
     tailscale_host_serves:
@@ -50,6 +53,12 @@
         funnel: false
       - name: photos
         upstream: http://immich-server:2283
+        funnel: false
+      - name: smokeping
+        upstream: http://smokeping:80
+        funnel: false
+      - name: speedtest
+        upstream: http://speedtest-tracker:80
         funnel: false
 
   tasks:
@@ -81,6 +90,8 @@
         - "{{ infra_dir }}/immich/ml-cache"
         - "{{ infra_dir }}/immich/ml-kernel-cache"
         - "{{ infra_dir }}/home-assistant"
+        - "{{ infra_dir }}/smokeping"
+        - "{{ infra_dir }}/speedtest-tracker"
         - "{{ quadlet_dir }}"
 
     # USB-attached photos drive. Mounted by label (survives /dev/sdX
@@ -283,6 +294,39 @@
         dest: "{{ infra_dir }}/pihole/pihole.env"
         mode: "0600"
         force: false  # don't clobber the admin password once set
+
+    # Smokeping Targets: created once (force:false) before the container's
+    # first start so the linuxserver init sees it and skips creating the
+    # default. After first run the file is owned by the abc subuid; Ansible
+    # won't try to overwrite it. To update targets later, edit via:
+    #   podman unshare vim {{ infra_dir }}/smokeping/Targets
+    # then: systemctl --user restart smokeping.service
+    - name: Render smokeping Targets (create-once)
+      ansible.builtin.template:
+        src: ../templates/smokeping-targets.j2
+        dest: "{{ infra_dir }}/smokeping/Targets"
+        mode: "0644"
+        force: false
+      notify: restart-smokeping
+
+    - name: Render speedtest-tracker env file
+      ansible.builtin.template:
+        src: ../templates/speedtest-tracker.env.j2
+        dest: "{{ infra_dir }}/speedtest-tracker.env"
+        mode: "0600"
+        force: false
+
+    - name: Chown smokeping dir for linuxserver abc (PUID 1000)
+      ansible.builtin.command:
+        cmd: "podman unshare chown -R 1000:1000 {{ infra_dir }}/smokeping"
+      environment: "{{ user_runtime_env }}"
+      changed_when: false
+
+    - name: Chown speedtest-tracker dir for linuxserver abc (PUID 1000)
+      ansible.builtin.command:
+        cmd: "podman unshare chown -R 1000:1000 {{ infra_dir }}/speedtest-tracker"
+      environment: "{{ user_runtime_env }}"
+      changed_when: false
 
     # Pi-hole publishes on :53, which is below the rootless cutoff (1024).
     # Lower the unprivileged-port floor so the rootless quadlet can bind it.
@@ -550,3 +594,8 @@
         name: dnscrypt-proxy
         state: restarted
       become: true
+
+    - name: restart-smokeping
+      ansible.builtin.command:
+        cmd: systemctl --user restart smokeping.service
+      environment: "{{ user_runtime_env }}"

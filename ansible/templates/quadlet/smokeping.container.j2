@@ -1,0 +1,25 @@
+[Unit]
+Description=Smokeping latency and loss monitor
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/smokeping:latest
+ContainerName=smokeping
+Network=arr.network
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/New_York
+# /config holds all smokeping config + RRD data. The linuxserver init
+# creates default General/Probes/Database on first start (if absent), then
+# chowns the whole tree to abc (PUID 1000). We pre-render the Targets file
+# (force:false) so our probe targets survive; everything else is
+# image-managed and should not be edited by Ansible after first run.
+Volume={{ infra_dir }}/smokeping:/config:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

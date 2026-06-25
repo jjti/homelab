@@ -1,0 +1,29 @@
+*** Targets ***
+
+probe = FPing
+
+menu = Top
+title = Network Latency Monitor
+
++ Local
+menu = Local
+title = Local Network
+
+++ Router
+menu = Router ({{ router_ip }})
+title = FiOS Router — local path (loss here = LAN/wifi, not Verizon)
+host = {{ router_ip }}
+
++ Internet
+menu = Internet
+title = Upstream — ISP and beyond
+
+++ Cloudflare
+menu = Cloudflare (1.1.1.1)
+title = Cloudflare DNS — anchor A
+host = 1.1.1.1
+
+++ Google
+menu = Google (8.8.8.8)
+title = Google DNS — anchor B
+host = 8.8.8.8

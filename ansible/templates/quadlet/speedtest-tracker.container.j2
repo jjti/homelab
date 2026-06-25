@@ -1,0 +1,21 @@
+[Unit]
+Description=Speedtest Tracker — periodic bandwidth tests
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/speedtest-tracker:latest
+ContainerName=speedtest-tracker
+Network=arr.network
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/New_York
+EnvironmentFile={{ infra_dir }}/speedtest-tracker.env
+Volume={{ infra_dir }}/speedtest-tracker:/config:Z
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
