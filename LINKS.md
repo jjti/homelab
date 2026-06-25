@@ -14,4 +14,3 @@
 | Access Point | <http://192.168.0.198> |
 | Smokeping    | <http://192.168.0.42:8880>        |
 | Speedtest    | <http://192.168.0.42:8765>        |
-| Recyclarr    | (CLI only — no UI)                |
